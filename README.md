@@ -1,6 +1,6 @@
 # Nystul Lab Template Repo
 
-Standard project structure for Nystul Lab work.
+This repository contains scripts for the figures and single cell RNA sequencing analysis for the Aging Ovary Project.
 
 ## Folder structure
 
