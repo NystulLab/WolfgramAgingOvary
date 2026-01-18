@@ -1,0 +1,81 @@
+---
+title: "StatsPhenotypePenetrance"
+output: html_document
+date: "2026-01-16"
+editor_options: 
+  chunk_output_type: console
+---
+Set-up
+```{r}
+library(dplyr)
+library(tidyverse)
+library(multcomp)
+```
+
+```{r}
+getwd()
+#should direct to R project folder
+```
+
+```{r}
+setwd("Code/CodeFigure1")
+getwd()
+#working directory should be /Code/Figure1
+```
+
+Load data
+```{r}
+phenostats <- read_csv("../../Data/DataFigure1/w1118PhenotypePenetrance.csv")
+```
+
+```{r}
+phenostats <- phenostats %>%
+  mutate(
+    Weeks = factor(Weeks, levels = sort(unique(Weeks))),
+    Weeks = relevel(Weeks, ref = "1")
+  )
+
+fit <- lm(Phenotype ~ Weeks, data = phenostats)
+
+dunnett <- glht(
+  fit,
+  linfct = mcp(Weeks = "Dunnett")
+)
+
+dunnett_summary <- summary(dunnett)
+
+pvals <- data.frame(
+  comparison = rownames(dunnett_summary$linfct),
+  p_value = as.numeric(dunnett_summary$test$pvalues)
+)
+
+pvals <- pvals %>%
+  mutate(
+    stars = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    ),
+    comparison = case_when(
+      grepl("^2", comparison) ~ "2 Weeks",
+      grepl("^3", comparison) ~ "3 Weeks",
+      grepl("^4", comparison) ~ "4 Weeks",
+      grepl("^5", comparison) ~ "5 Weeks",
+      grepl("^6", comparison) ~ "6 Weeks",
+      TRUE ~ comparison
+    )
+  )
+
+pvals
+```
+
+```{r}
+write.csv(
+  pvals,
+  "../../Results/ResultsFigure1/StatsPhenotypePenetranceDunnetts.csv",
+  row.names = FALSE,
+  quote = TRUE
+)
+```
+
