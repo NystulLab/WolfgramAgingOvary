@@ -1,0 +1,75 @@
+---
+title: "StatsEdUw1118"
+output: html_document
+date: "2026-01-19"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(dplyr)
+library(broom)
+```
+
+```{r}
+getwd()
+#should direct to R project folder, if directed to /Code/Figure2, skip next step or redirect to /Code/Figure2
+```
+
+```{r}
+setwd("Code/CodeFigure2")
+getwd()
+#working directory should be /Code/Figure2
+```
+
+Load data
+```{r}
+edustats <- read_csv("../../Data/DataFigure2/w1118EdU.csv")
+```
+
+```{r}
+edustats <- edustats %>%
+  mutate(
+    Weeks = factor(Weeks, levels = c(1, 6))  # Week 1 = reference
+  )
+
+fit <- glm(
+  EdU ~ Weeks,
+  family = poisson(link = "log"),
+  data = edustats
+)
+
+glm_tidy <- tidy(fit)
+
+week6_row <- glm_tidy %>%
+  filter(term == "Weeks6")
+
+p_val <- week6_row$p.value
+
+stars <- case_when(
+  p_val < 0.001  ~ "***",
+  p_val < 0.01   ~ "**",
+  p_val < 0.05   ~ "*",
+  TRUE           ~ "ns"
+)
+
+poisson_edu <- data.frame(
+  comparison = "6 Weeks",
+  model = "Poisson_GLM",
+  estimate_logRR = week6_row$estimate,
+  p_value = p_val,
+  stars = stars
+)
+
+print(poisson_edu)
+```
+
+```{r}
+write.csv(
+  poisson_edu,
+  file = "../../Results/ResultsFigure2/StatsEdUPoisson.csv",
+  row.names = FALSE
+)
+```
+
