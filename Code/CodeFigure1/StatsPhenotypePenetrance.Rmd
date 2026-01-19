@@ -14,7 +14,7 @@ library(multcomp)
 
 ```{r}
 getwd()
-#should direct to R project folder
+#should direct to R project folder, if directed to /Code/Figure1, skip next step
 ```
 
 ```{r}

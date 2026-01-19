@@ -1,0 +1,69 @@
+---
+title: "StatsNcadw1118"
+output: html_document
+date: "2026-01-19"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(dplyr)
+library(tidyverse)
+library(multcomp)
+```
+
+```{r}
+getwd()
+#should direct to R project folder, if directed to /Code/Figure1, skip next step
+```
+
+```{r}
+setwd("Code/CodeFigure1")
+getwd()
+#working directory should be /Code/Figure1
+```
+
+Load data
+```{r}
+ncadstats <- read_csv("../../Data/DataFigure1/w1118Ncad_n.csv")
+```
+
+```{r}
+ncadstats <- ncadstats %>%
+  mutate(Weeks = factor(Weeks))
+
+
+ttest_res <- t.test(
+  Ncad ~ Weeks,
+  data = ncadstats,
+  var.equal = FALSE
+)
+
+p_val <- ttest_res$p.value
+
+stars <- case_when(
+  p_val < 0.001  ~ "***",
+  p_val < 0.01   ~ "**",
+  p_val < 0.05   ~ "*",
+  TRUE           ~ "ns"
+)
+
+ttest_df <- data.frame(
+  comparison = "6 Weeks",
+  p_value = p_val,
+  stars = stars
+)
+
+print(ttest_df)
+```
+
+```{r}
+write.csv(
+  ttest_df,
+  "../../Results/ResultsFigure1/StatsNcadTtest.csv",
+  row.names = FALSE,
+  quote = TRUE
+)
+```
+
