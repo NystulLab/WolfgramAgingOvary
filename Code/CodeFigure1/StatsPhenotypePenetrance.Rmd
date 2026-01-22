@@ -14,11 +14,11 @@ library(multcomp)
 
 ```{r}
 getwd()
-#should direct to R project folder, if directed to /Code/Figure1, skip next step
+#should direct to R project folder, if directed to /Code/Figure1, skip next step or direct to /Code/Figure1
 ```
 
 ```{r}
-setwd("Code/CodeFigure1")
+setwd("../CodeFigure1")
 getwd()
 #working directory should be /Code/Figure1
 ```
@@ -77,5 +77,30 @@ write.csv(
   row.names = FALSE,
   quote = TRUE
 )
+```
+
+```{r}
+library(lme4)
+library(multcomp)
+
+phenostats$Weeks <- factor(phenostats$Weeks)
+phenostats$Weeks <- relevel(phenostats$Weeks, ref = "1")
+
+phenostats$N <- factor(phenostats$N)
+
+model <- lmer(
+  Phenotype ~ Weeks + (1 | N),
+  data = phenostats
+)
+
+summary(model)
+
+# Dunnett contrasts vs control
+dunnett <- glht(
+  model,
+  linfct = mcp(Weeks = "Dunnett")
+)
+
+summary(dunnett)
 ```
 

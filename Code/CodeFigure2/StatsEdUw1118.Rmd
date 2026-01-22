@@ -73,3 +73,15 @@ write.csv(
 )
 ```
 
+```{r}
+library(lme4)
+
+m_pois <- glmer(
+  EdU ~ Weeks + (1 | N),
+  data = edustats,
+  family = poisson(link = "log")
+)
+
+summary(m_pois)
+```
+

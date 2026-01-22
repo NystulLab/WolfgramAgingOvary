@@ -72,3 +72,16 @@ write.csv(
   row.names = FALSE
 )
 ```
+
+```{r}
+library(lme4)
+
+m_pois <- glmer(
+  pHH3 ~ Weeks + (1 | N),
+  data = pHH3stats,
+  family = poisson(link = "log")
+)
+
+summary(m_pois)
+```
+
