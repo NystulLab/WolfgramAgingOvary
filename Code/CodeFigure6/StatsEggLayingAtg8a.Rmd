@@ -1,0 +1,82 @@
+---
+title: "StatsEggLayingAtg8a"
+output: html_document
+date: "2026-01-20"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(lme4)
+library(dplyr)
+library(broom.mixed)
+library(emmeans)
+```
+
+Load data
+```{r}
+eggstats <- read_csv("../Data/DataFigure6/Atg8amChGfpEggsFemale_n.csv")
+```
+
+```{r}
+eggstats <- eggstats %>%
+  mutate(
+    Weeks = factor(Weeks, levels = c(1, 6)),
+    Genotype = factor(Genotype, levels = c("Control", "Exp"))
+  )
+
+egg_pois <- glmer(
+  EggsFemale ~ Weeks * Genotype + (1 | N),
+  data = eggstats,
+  family = poisson(link = "log")
+)
+
+emm <- emmeans(
+  egg_pois,
+  ~ Weeks * Genotype,
+  type = "link"
+)
+
+egg_contrasts <- contrast(
+  emm,
+  method = list(
+    "1wk_Control_vs_Exp" = c(-1,  1,  0,  0),
+    "6wk_Control_vs_Exp" = c( 0,  0, -1,  1),
+    "1wk_Control_vs_6wk_Exp" = c(-1,  0,  0,  1)
+  )
+)
+
+poisson_eggs <- tidy(egg_contrasts) %>%
+  rename(
+    comparison = contrast,
+    estimate_logRR = estimate,
+    p_value = p.value
+  ) %>%
+  mutate(
+    model = "Poisson_GLMM",
+    stars = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01  ~ "**",
+      p_value < 0.05  ~ "*",
+      TRUE            ~ "ns"
+    )
+  ) %>%
+  dplyr::select(
+    comparison,
+    model,
+    estimate_logRR,
+    p_value,
+    stars
+  )
+
+print(poisson_eggs)
+```
+
+```{r}
+write.csv(
+  poisson_eggs,
+  file = "../Results/ResultsFigure6/StatsEggsPoisson.csv",
+  row.names = FALSE
+)
+```

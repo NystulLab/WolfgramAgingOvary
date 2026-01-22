@@ -9,23 +9,17 @@ editor_options:
 Set-up
 ```{r}
 library(dplyr)
-library(broom)
+library(lme4)
+library(broom.mixed)
 ```
 
 ```{r}
 getwd()
-#should direct to R project folder, if directed to /Code/Figure2, skip next step or redirect to /Code/Figure2
-```
-
-```{r}
-setwd("Code/CodeFigure2")
-getwd()
-#working directory should be /Code/Figure2
 ```
 
 Load data
 ```{r}
-pHH3stats <- read_csv("../../Data/DataFigure2/w1118pHH3.csv")
+pHH3stats <- read_csv("Data/DataFigure2/w1118pHH3.csv")
 ```
 
 ```{r}
@@ -34,15 +28,19 @@ pHH3stats <- pHH3stats %>%
     Weeks = factor(Weeks, levels = c(1, 6))  # Week 1 = reference
   )
 
-fit <- glm(
-  pHH3 ~ Weeks,
-  family = poisson(link = "log"),
-  data = pHH3stats
+pHH3_pois <- glmer(
+  pHH3 ~ Weeks + (1 | N),
+  data = pHH3stats,
+  family = poisson(link = "log")
 )
 
-glm_tidy <- tidy(fit)
+glmm_tidy <- tidy(
+  pHH3_pois,
+  effects = "fixed",
+  conf.int = FALSE
+)
 
-week6_row <- glm_tidy %>%
+week6_row <- glmm_tidy %>%
   filter(term == "Weeks6")
 
 p_val <- week6_row$p.value
@@ -56,7 +54,7 @@ stars <- case_when(
 
 poisson_pHH3 <- data.frame(
   comparison = "6 Weeks",
-  model = "Poisson_GLM",
+  model = "Poisson_GLMM",
   estimate_logRR = week6_row$estimate,
   p_value = p_val,
   stars = stars
@@ -68,20 +66,8 @@ print(poisson_pHH3)
 ```{r}
 write.csv(
   poisson_pHH3,
-  file = "../../Results/ResultsFigure2/StatspHH3Poisson.csv",
+  file = "Results/ResultsFigure2/StatspHH3Poisson.csv",
   row.names = FALSE
 )
-```
-
-```{r}
-library(lme4)
-
-m_pois <- glmer(
-  pHH3 ~ Weeks + (1 | N),
-  data = pHH3stats,
-  family = poisson(link = "log")
-)
-
-summary(m_pois)
 ```
 

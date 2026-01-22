@@ -1,2 +1,6 @@
-"comparison","model","estimate_logRR","p_value","stars"
-"Week1_vs_Week6","Poisson_GLM",0.489208097524556,5.44611452226683e-20,"***"
+"comparison","p_value","stars"
+"2 Weeks",0.022231610583856,"*"
+"3 Weeks",6.68253810631736e-06,"***"
+"4 Weeks",4.4180531189042e-07,"***"
+"5 Weeks",9.5692498369715e-10,"***"
+"6 Weeks",0,"***"

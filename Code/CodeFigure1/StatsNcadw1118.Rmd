@@ -15,18 +15,11 @@ library(multcomp)
 
 ```{r}
 getwd()
-#should direct to R project folder, if directed to /Code/Figure1, skip next step
-```
-
-```{r}
-setwd("Code/CodeFigure1")
-getwd()
-#working directory should be /Code/Figure1
 ```
 
 Load data
 ```{r}
-ncadstats <- read_csv("../../Data/DataFigure1/w1118Ncad_n.csv")
+ncadstats <- read_csv("Data/DataFigure1/w1118Ncad_n.csv")
 ```
 
 ```{r}
@@ -61,7 +54,7 @@ print(ttest_df)
 ```{r}
 write.csv(
   ttest_df,
-  "../../Results/ResultsFigure1/StatsNcadTtest.csv",
+  "Results/ResultsFigure1/StatsNcadTtest.csv",
   row.names = FALSE,
   quote = TRUE
 )

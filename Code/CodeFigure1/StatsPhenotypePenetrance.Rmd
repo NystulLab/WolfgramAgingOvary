@@ -9,36 +9,35 @@ Set-up
 ```{r}
 library(dplyr)
 library(tidyverse)
+library(lme4)
 library(multcomp)
 ```
 
 ```{r}
 getwd()
-#should direct to R project folder, if directed to /Code/Figure1, skip next step or direct to /Code/Figure1
-```
-
-```{r}
-setwd("../CodeFigure1")
-getwd()
-#working directory should be /Code/Figure1
+#working directory should be /Code/
 ```
 
 Load data
 ```{r}
-phenostats <- read_csv("../../Data/DataFigure1/w1118PhenotypePenetrance.csv")
+phenostats <- read_csv("Data/DataFigure1/w1118PhenotypePenetrance.csv")
 ```
 
 ```{r}
-phenostats <- phenostats %>%
-  mutate(
-    Weeks = factor(Weeks, levels = sort(unique(Weeks))),
-    Weeks = relevel(Weeks, ref = "1")
-  )
+phenostats$Weeks <- factor(phenostats$Weeks)
+phenostats$Weeks <- relevel(phenostats$Weeks, ref = "1")
 
-fit <- lm(Phenotype ~ Weeks, data = phenostats)
+phenostats$N <- factor(phenostats$N)
+
+model <- lmer(
+  Phenotype ~ Weeks + (1 | N),
+  data = phenostats
+)
+
+summary(model)
 
 dunnett <- glht(
-  fit,
+  model,
   linfct = mcp(Weeks = "Dunnett")
 )
 
@@ -73,34 +72,8 @@ pvals
 ```{r}
 write.csv(
   pvals,
-  "../../Results/ResultsFigure1/StatsPhenotypePenetranceDunnetts.csv",
+  "Results/ResultsFigure1/StatsPhenotypePenetranceDunnetts.csv",
   row.names = FALSE,
   quote = TRUE
 )
 ```
-
-```{r}
-library(lme4)
-library(multcomp)
-
-phenostats$Weeks <- factor(phenostats$Weeks)
-phenostats$Weeks <- relevel(phenostats$Weeks, ref = "1")
-
-phenostats$N <- factor(phenostats$N)
-
-model <- lmer(
-  Phenotype ~ Weeks + (1 | N),
-  data = phenostats
-)
-
-summary(model)
-
-# Dunnett contrasts vs control
-dunnett <- glht(
-  model,
-  linfct = mcp(Weeks = "Dunnett")
-)
-
-summary(dunnett)
-```
-

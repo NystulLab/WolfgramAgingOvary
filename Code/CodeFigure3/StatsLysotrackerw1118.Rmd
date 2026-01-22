@@ -1,0 +1,173 @@
+---
+title: "StatsLysotrackerw1118"
+output: html_document
+date: "2026-01-22"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(lme4)
+library(dplyr)
+library(broom.mixed)
+```
+
+```{r}
+getwd()
+```
+
+Load data
+```{r}
+lysostats <- read_csv("Data/DataFigure3/w1118LysotrackerAll.csv")
+```
+
+##Stats for Lysotracker on Fas3 border in 1 vs 6 weeks w1118
+```{r}
+lysofas31v6_avg <- lysostats %>%
+  group_by(N, Weeks) %>%
+  summarize(
+    LysoFas3 = mean(LysoFas3),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Weeks = factor(Weeks)
+  )
+
+ttest_lyso1v6avg <- t.test(
+  LysoFas3 ~ Weeks,
+  data = lysofas31v6_avg,
+  var.equal = FALSE
+)
+
+p_val <- ttest_lyso1v6avg$p.value
+
+stars <- case_when(
+  p_val < 0.001 ~ "***",
+  p_val < 0.01  ~ "**",
+  p_val < 0.05  ~ "*",
+  TRUE          ~ "ns"
+)
+
+lysofas31v6_ttest <- data.frame(
+  comparison = "6 Weeks",
+  p_value = p_val,
+  stars = stars
+)
+
+print(lysofas31v6_ttest)
+```
+
+```{r}
+write.csv(
+  lysofas31v6_ttest,
+  "Results/ResultsFigure3/StatsLysoFas31v6ttest.csv",
+  row.names = FALSE
+)
+```
+
+
+##Stats for Lysotracker on Fas3 border in 6 weeks, no phenotype vs phenotype
+
+Load data
+```{r}
+lysostats <- read_csv("Data/DataFigure3/w1118LysotrackerAll.csv")
+```
+
+```{r}
+lyso6wk <- lysostats %>%
+  filter(Weeks == 6) %>%
+  mutate(
+    Phenotype = factor(Phenotype),
+    N = factor(N)
+  )
+
+lyso_glmm <- glmer(
+  LysoFas3 ~ Phenotype + (1 | N),
+  data = lyso6wk,
+  family = binomial(link = "logit")
+)
+
+lyso_summary <- summary(lyso_glmm)
+
+# Extract fixed-effect stats (Phenotype 1 vs 0)
+coef_row <- lyso_summary$coefficients["Phenotype1", ]
+
+glmm_lyso <- data.frame(
+  term = "Phenotype",
+  estimate_log_odds = coef_row["Estimate"],
+  std_error = coef_row["Std. Error"],
+  z_value = coef_row["z value"],
+  p_value = coef_row["Pr(>|z|)"],
+  odds_ratio = exp(coef_row["Estimate"])
+)
+
+glmm_lyso$stars <- ifelse(
+  glmm_lyso$p_value < 0.001, "***",
+  ifelse(glmm_lyso$p_value < 0.01, "**",
+         ifelse(glmm_lyso$p_value < 0.05, "*", "ns"))
+)
+
+print(glmm_lyso)
+```
+
+```{r}
+write.csv(
+  glmm_lyso,
+  "Results/ResultsFigure3/StatsLysoFas36wkNovsPhenoGlmm.csv",
+  row.names = FALSE
+)
+```
+
+
+##Stats for Phenotype penetrance for 1 vs 6 weeks in No Lysotracker Band Condition 
+
+Load data
+```{r}
+lysostats <- read_csv("Data/DataFigure3/w1118LysotrackerAll.csv")
+```
+
+```{r}
+pheno_noband_avg <- lysostats %>%
+  filter(LysoFas3 == 0) %>%
+  group_by(N, Weeks) %>%
+  summarize(
+    Phenotype = mean(Phenotype),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Weeks = factor(Weeks)
+  )
+
+ttest_pheno1v6noband <- t.test(
+  Phenotype ~ Weeks,
+  data = pheno_noband_avg,
+  var.equal = FALSE
+)
+
+p_val <- ttest_pheno1v6noband$p.value
+
+stars <- case_when(
+  p_val < 0.001 ~ "***",
+  p_val < 0.01  ~ "**",
+  p_val < 0.05  ~ "*",
+  TRUE          ~ "ns"
+)
+
+ttest_lyso1v6avg_df <- data.frame(
+  comparison = "6 Weeks",
+  p_value = p_val,
+  stars = stars
+)
+
+print(ttest_lyso1v6avg_df)
+```
+
+```{r}
+write.csv(
+  ttest_lyso1v6avg_df,
+  "Results/ResultsFigure3/StatsPhenoNoLyso1v6ttest.csv",
+  row.names = FALSE
+)
+```
+
