@@ -1,0 +1,4 @@
+"comparison","p_value","stars"
+"1 Week Control vs 1 Week Exp",0.0836362597112011,"ns"
+"6 Week Control vs 6 Week Exp",0.00125557703945751,"**"
+"1 Week Control vs 6 Week Exp",0.23367405197666,"ns"

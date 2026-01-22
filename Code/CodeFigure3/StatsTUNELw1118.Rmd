@@ -120,16 +120,16 @@ write.csv(
 ```
 
 
-##Stats for Phenotype penetrance for 1 vs 6 weeks in No Lysotracker Band Condition 
+##Stats for Phenotype penetrance for 1 vs 6 weeks in No TUNEL Band Condition 
 
 Load data
 ```{r}
-lysostats <- read_csv("Data/DataFigure3/w1118LysotrackerAll.csv")
+tunelstats <- read_csv("Data/DataFigure3/w1118TUNELAll.csv")
 ```
 
 ```{r}
-pheno_noband_avg <- lysostats %>%
-  filter(LysoFas3 == 0) %>%
+pheno_noband_avg <- tunelstats %>%
+  filter(TUNELFas3 == 0) %>%
   group_by(N, Weeks) %>%
   summarize(
     Phenotype = mean(Phenotype),
@@ -154,19 +154,19 @@ stars <- case_when(
   TRUE          ~ "ns"
 )
 
-ttest_lyso1v6avg_df <- data.frame(
+ttest_tunel1v6avg_df <- data.frame(
   comparison = "6 Weeks",
   p_value = p_val,
   stars = stars
 )
 
-print(ttest_lyso1v6avg_df)
+print(ttest_tunel1v6avg_df)
 ```
 
 ```{r}
 write.csv(
-  ttest_lyso1v6avg_df,
-  "Results/ResultsFigure3/StatsPhenoNoLyso1v6ttest.csv",
+  ttest_tunel1v6avg_df,
+  "Results/ResultsFigure3/StatsPhenoNoTUNEL1v6ttest.csv",
   row.names = FALSE
 )
 ```

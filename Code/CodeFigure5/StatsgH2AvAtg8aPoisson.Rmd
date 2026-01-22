@@ -1,0 +1,74 @@
+---
+title: "StatsgH2AvAtg8aPoisson"
+output: html_document
+date: "2026-01-22"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(dplyr)
+library(lme4)
+library(broom.mixed)
+```
+
+```{r}
+getwd()
+```
+
+Load data
+```{r}
+gH2Avstats <- read_csv("Data/DataFigure5/Atg8amChGfpgH2Av.csv")
+```
+
+```{r}
+gH2Avstats <- gH2Avstats %>%
+  mutate(
+    Genotype = factor(Genotype, levels = c("Control", "Exp"))
+  )
+
+gH2Av_pois <- glmer(
+  gH2Av ~ Genotype + (1 | N),
+  data = gH2Avstats,
+  family = poisson(link = "log")
+)
+
+glmm_tidy <- tidy(
+  gH2Av_pois,
+  effects = "fixed",
+  conf.int = FALSE
+)
+
+exp_row <- glmm_tidy %>%
+  filter(term == "GenotypeExp")
+
+p_val <- exp_row$p.value
+
+stars <- case_when(
+  p_val < 0.001  ~ "***",
+  p_val < 0.01   ~ "**",
+  p_val < 0.05   ~ "*",
+  TRUE           ~ "ns"
+)
+
+poisson_gH2Av <- data.frame(
+  comparison = "Control vs Exp",
+  model = "Poisson_GLMM",
+  estimate_logRR = exp_row$estimate,
+  p_value = p_val,
+  stars = stars
+)
+
+print(poisson_gH2Av)
+```
+
+```{r}
+# Save to CSV
+write.csv(
+  poisson_gH2Av,
+  file = "Results/ResultsFigure5/StatsgH2AvAtg8aPoisson.csv",
+  row.names = FALSE
+)
+```
+

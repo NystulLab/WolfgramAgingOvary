@@ -1,0 +1,93 @@
+---
+title: "StatsPhenotypePenetranceAtg8attest"
+output: html_document
+date: "2026-01-22"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+getwd()
+```
+
+Load data
+```{r}
+phenostats <- read_csv("Data/DataFigure5/Atg8amChGfpPhenotypePenetrance.csv")
+```
+
+```{r}
+phenostats_avg <- phenostats %>%
+  group_by(N, Weeks, Genotype) %>%
+  summarize(
+    Phenotype = mean(Phenotype),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Weeks = as.character(Weeks),
+    Genotype = as.character(Genotype)
+  )
+
+# 1 Week Control vs 1 Week Exp
+df1 <- phenostats_avg %>% filter(Weeks == "1" & Genotype == "Control")
+df2 <- phenostats_avg %>% filter(Weeks == "1" & Genotype == "Exp")
+ttest1 <- t.test(df1$Phenotype, df2$Phenotype, var.equal = FALSE)
+p1 <- ttest1$p.value
+stars1 <- case_when(
+  p1 < 0.001 ~ "***",
+  p1 < 0.01  ~ "**",
+  p1 < 0.05  ~ "*",
+  TRUE       ~ "ns"
+)
+
+# 6 Week Control vs 6 Week Exp
+df3 <- phenostats_avg %>% filter(Weeks == "6" & Genotype == "Control")
+df4 <- phenostats_avg %>% filter(Weeks == "6" & Genotype == "Exp")
+ttest2 <- t.test(df3$Phenotype, df4$Phenotype, var.equal = FALSE)
+p2 <- ttest2$p.value
+stars2 <- case_when(
+  p2 < 0.001 ~ "***",
+  p2 < 0.01  ~ "**",
+  p2 < 0.05  ~ "*",
+  TRUE       ~ "ns"
+)
+
+# 1 Week Control vs 6 Week Exp
+df5 <- phenostats_avg %>% filter(Weeks == "1" & Genotype == "Control")
+df6 <- phenostats_avg %>% filter(Weeks == "6" & Genotype == "Exp")
+ttest3 <- t.test(df5$Phenotype, df6$Phenotype, var.equal = FALSE)
+p3 <- ttest3$p.value
+stars3 <- case_when(
+  p3 < 0.001 ~ "***",
+  p3 < 0.01  ~ "**",
+  p3 < 0.05  ~ "*",
+  TRUE       ~ "ns"
+)
+
+# Combine results into a single data frame
+pheno_ttest_df <- data.frame(
+  comparison = c(
+    "1 Week Control vs 1 Week Exp",
+    "6 Week Control vs 6 Week Exp",
+    "1 Week Control vs 6 Week Exp"
+  ),
+  p_value = c(p1, p2, p3),
+  stars = c(stars1, stars2, stars3),
+  stringsAsFactors = FALSE
+)
+
+print(pheno_ttest_df)
+```
+
+```{r}
+write.csv(
+  pheno_ttest_df,
+  "Results/ResultsFigure5/StatsPhenotypePenetranceAtg8attest.csv",
+  row.names = FALSE
+)
+```

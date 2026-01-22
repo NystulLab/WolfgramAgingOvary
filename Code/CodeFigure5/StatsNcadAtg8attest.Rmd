@@ -1,0 +1,73 @@
+---
+title: "StatsNcadAtg8attest"
+output: html_document
+date: "2026-01-22"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(dplyr)
+library(tidyverse)
+library(multcomp)
+```
+
+```{r}
+getwd()
+```
+
+Load data
+```{r}
+ncadstats <- read_csv("Data/DataFigure5/Atg8amChGfpNcad_n.csv")
+```
+
+```{r}
+ncadstats <- ncadstats %>%
+  mutate(Genotype = factor(Genotype, levels = c("Control", "Exp")))
+```
+
+```{r}
+library(car)
+leveneTest(Ncad ~ Genotype, data = ncadstats)
+```
+
+```{r}
+# Perform t-test
+ttest_ncad <- t.test(
+  Ncad ~ Genotype,
+  data = ncadstats,
+  var.equal = TRUE
+)
+
+# Extract p-value
+p_val <- ttest_ncad$p.value
+
+# Convert p-value to stars
+stars <- dplyr::case_when(
+  p_val < 0.001  ~ "***",
+  p_val < 0.01   ~ "**",
+  p_val < 0.05   ~ "*",
+  TRUE           ~ "ns"
+)
+
+# Create a dataframe for saving
+ncad_ttest_df <- data.frame(
+  comparison = "Control vs Exp",
+  p_value = p_val,
+  stars = stars
+)
+
+print(ncad_ttest_df)
+```
+
+```{r}
+# Save to CSV
+write.csv(
+  ncad_ttest_df,
+  "Results/ResultsFigure5/StatsNcadAtg8attest.csv",
+  row.names = FALSE,
+  quote = TRUE
+)
+```
+
