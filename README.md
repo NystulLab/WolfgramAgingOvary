@@ -13,5 +13,3 @@ This repository contains scripts for the figures and single cell RNA sequencing 
 
 - `Results/`  
   Output from analyses: figures, tables, summary data, etc.
-
-## Getting started
