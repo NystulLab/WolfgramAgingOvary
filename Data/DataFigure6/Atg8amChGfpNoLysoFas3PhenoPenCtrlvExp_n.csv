@@ -1,7 +1,7 @@
 Weeks,Genotype,NoLysoFas3_PhenoCtrlvsExp,n,N
 6,Control,0.7143,7,1
-6,Exp,0,3,1
-6,Control,0.727272727,11,2
-6,Exp,0.580645161,31,2
+6,Exp,0.3333,3,1
+6,Control,0.7273,11,2
+6,Exp,0.5806,31,2
 6,Control,0.5455,11,3
 6,Exp,0.3846,26,3

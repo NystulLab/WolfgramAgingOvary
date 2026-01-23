@@ -14,9 +14,13 @@ library(broom.mixed)
 library(emmeans)
 ```
 
+```{r}
+getwd()
+```
+
 Load data
 ```{r}
-eggstats <- read_csv("../Data/DataFigure6/Atg8amChGfpEggsFemale_n.csv")
+eggstats <- read_csv("Data/DataFigure6/Atg8amChGfpEggsFemale_n.csv")
 ```
 
 ```{r}
@@ -76,7 +80,7 @@ print(poisson_eggs)
 ```{r}
 write.csv(
   poisson_eggs,
-  file = "../Results/ResultsFigure6/StatsEggsPoisson.csv",
+  file = "Results/ResultsFigure6/StatsEggsPoisson.csv",
   row.names = FALSE
 )
 ```

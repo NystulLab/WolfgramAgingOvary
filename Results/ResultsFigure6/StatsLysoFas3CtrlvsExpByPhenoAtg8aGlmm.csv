@@ -1,0 +1,3 @@
+"Genotype","comparison","estimate_log_odds","std_error","z_value","p_value","stars"
+"Control","Phenotype vs No Phenotype",-1.00957866623062,0.583665800760703,-1.72972044090096,0.0836802348021948,"ns"
+"Exp","Phenotype vs No Phenotype",-0.820611819096101,0.518094098840258,-1.58390497195977,0.113215345781379,"ns"

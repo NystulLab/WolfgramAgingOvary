@@ -1,0 +1,203 @@
+---
+title: "StatsLysotrackerAtg8a"
+output: html_document
+date: "2026-01-23"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(tidyverse)
+library(lme4)
+library(dplyr)
+library(broom.mixed)
+```
+
+```{r}
+getwd()
+```
+
+Load data
+```{r}
+lysostats <- read_csv("Data/DataFigure6/Atg8amChGfpLysotrackerAll.csv")
+```
+
+##Stats for Lysotracker on Fas3 border in Control vs Exp for ;10930;>;Atg8a-mCherry-GFP;
+```{r}
+lysofas3ctrlvexp_avg <- lysostats %>%
+  group_by(N, Genotype) %>%
+  summarize(
+    LysoFas3 = mean(LysoFas3),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Genotype = factor(Genotype)
+  )
+
+ttest_lysoctrlvexp <- t.test(
+  LysoFas3 ~ Genotype,
+  data = lysofas3ctrlvexp_avg,
+  var.equal = FALSE
+)
+
+p_val <- ttest_lysoctrlvexp$p.value
+
+stars <- case_when(
+  p_val < 0.001 ~ "***",
+  p_val < 0.01  ~ "**",
+  p_val < 0.05  ~ "*",
+  TRUE          ~ "ns"
+)
+
+lysofas3ctrlvexp_ttest <- data.frame(
+  comparison = "Exp",
+  p_value = p_val,
+  stars = stars
+)
+
+print(lysofas3ctrlvexp_ttest)
+```
+
+```{r}
+write.csv(
+  lysofas3ctrlvexp_ttest,
+  "Results/ResultsFigure6/StatsLysoFas3CtrlvExpAtg8attest.csv",
+  row.names = FALSE
+)
+```
+
+
+##Stats for Lysotracker on Fas3 border in Control vs Exp by Phenotype for ;10930;>;Atg8a-mCherry-GFP;
+
+Load data
+```{r}
+lysostats <- read_csv("Data/DataFigure6/Atg8amChGfpLysotrackerAll.csv")
+```
+
+```{r}
+lysostats <- lysostats %>%
+  mutate(
+    Phenotype = factor(Phenotype),
+    N = factor(N),
+    Genotype = factor(Genotype)
+  )
+
+#GLMM for Control
+control_df <- lysostats %>% filter(Genotype == "Control")
+
+control_glmm <- glmer(
+  LysoFas3 ~ Phenotype + (1 | N),
+  data = control_df,
+  family = binomial(link = "logit")
+)
+
+control_summary <- summary(control_glmm)
+coef_control <- control_summary$coefficients["Phenotype1", ]
+
+control_stats <- data.frame(
+  Genotype = "Control",
+  comparison = "Phenotype vs No Phenotype",
+  estimate_log_odds = coef_control["Estimate"],
+  std_error = coef_control["Std. Error"],
+  z_value = coef_control["z value"],
+  p_value = coef_control["Pr(>|z|)"]
+)
+
+control_stats$stars <- ifelse(
+  control_stats$p_value < 0.001, "***",
+  ifelse(control_stats$p_value < 0.01, "**",
+         ifelse(control_stats$p_value < 0.05, "*", "ns"))
+)
+
+# GLMM for Exp
+exp_df <- lysostats %>% filter(Genotype == "Exp")
+
+exp_glmm <- glmer(
+  LysoFas3 ~ Phenotype + (1 | N),
+  data = exp_df,
+  family = binomial(link = "logit")
+)
+
+exp_summary <- summary(exp_glmm)
+coef_exp <- exp_summary$coefficients["Phenotype1", ]
+
+exp_stats <- data.frame(
+  Genotype = "Exp",
+  comparison = "Phenotype vs No Phenotype",
+  estimate_log_odds = coef_exp["Estimate"],
+  std_error = coef_exp["Std. Error"],
+  z_value = coef_exp["z value"],
+  p_value = coef_exp["Pr(>|z|)"]
+)
+
+exp_stats$stars <- ifelse(
+  exp_stats$p_value < 0.001, "***",
+  ifelse(exp_stats$p_value < 0.01, "**",
+         ifelse(exp_stats$p_value < 0.05, "*", "ns"))
+)
+
+glmm_all <- bind_rows(control_stats, exp_stats)
+
+print(glmm_all)
+```
+
+```{r}
+write.csv(
+  glmm_all,
+  "Results/ResultsFigure6/StatsLysoFas3CtrlvsExpByPhenoAtg8aGlmm.csv",
+  row.names = FALSE
+)
+```
+
+
+##Stats for Phenotype penetrance for 1 vs 6 weeks in No Lysotracker Band Condition for ;10930;>;Atg8a-mCherry-GFP;
+
+Load data
+```{r}
+lysostats <- read_csv("Data/DataFigure6/Atg8amChGfpLysotrackerAll.csv")
+```
+
+```{r}
+pheno_noband_avg <- lysostats %>%
+  filter(LysoFas3 == 0) %>%
+  group_by(N, Genotype) %>%
+  summarize(
+    Phenotype = mean(Phenotype),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    Genotype = factor(Genotype)
+  )
+
+ttest_pheno1v6noband <- t.test(
+  Phenotype ~ Genotype,
+  data = pheno_noband_avg,
+  var.equal = FALSE
+)
+
+p_val <- ttest_pheno1v6noband$p.value
+
+stars <- case_when(
+  p_val < 0.001 ~ "***",
+  p_val < 0.01  ~ "**",
+  p_val < 0.05  ~ "*",
+  TRUE          ~ "ns"
+)
+
+ttest_lysoctrlvexpavg_df <- data.frame(
+  comparison = "Exp",
+  p_value = p_val,
+  stars = stars
+)
+
+print(ttest_lysoctrlvexpavg_df)
+```
+
+```{r}
+write.csv(
+  ttest_lyso1v6avg_df,
+  "Results/ResultsFigure6/StatsPhenoNoLysoCtrlvExpttest.csv",
+  row.names = FALSE
+)
+```

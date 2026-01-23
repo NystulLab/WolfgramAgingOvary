@@ -1,0 +1,4 @@
+"comparison","model","estimate_logRR","p_value","stars"
+"1wk_Control_vs_Exp","Poisson_GLMM",-1.45667515788169,0.00131206247693459,"**"
+"6wk_Control_vs_Exp","Poisson_GLMM",-1.305591182601,1.12733061654179e-06,"***"
+"1wk_Control_vs_6wk_Exp","Poisson_GLMM",-0.376566340778143,0.222844432769287,"ns"
