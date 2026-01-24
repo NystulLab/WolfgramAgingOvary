@@ -25,12 +25,18 @@ ncadstats <- read_csv("Data/DataFigure1/w1118Ncad_n.csv")
 ```{r}
 ncadstats <- ncadstats %>%
   mutate(Weeks = factor(Weeks))
+```
 
+```{r}
+library(car)
+leveneTest(Ncad ~ Weeks, data = ncadstats)
+```
 
+```{r}
 ttest_res <- t.test(
   Ncad ~ Weeks,
   data = ncadstats,
-  var.equal = FALSE
+  var.equal = TRUE
 )
 
 p_val <- ttest_res$p.value
