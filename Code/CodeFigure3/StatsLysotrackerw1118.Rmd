@@ -11,18 +11,20 @@ Set-up
 library(lme4)
 library(dplyr)
 library(broom.mixed)
+library(tidyverse)
 ```
 
 ```{r}
 getwd()
 ```
 
+##Stats for Lysotracker on Fas3 border in 1 vs 6 weeks w1118
+
 Load data
 ```{r}
 lysostats <- read_csv("Data/DataFigure3/w1118LysotrackerAll.csv")
 ```
 
-##Stats for Lysotracker on Fas3 border in 1 vs 6 weeks w1118
 ```{r}
 lysofas31v6_avg <- lysostats %>%
   group_by(N, Weeks) %>%
@@ -66,7 +68,6 @@ write.csv(
 )
 ```
 
-
 ##Stats for Lysotracker on Fas3 border in 6 weeks, no phenotype vs phenotype
 
 Load data
@@ -94,7 +95,7 @@ lyso_summary <- summary(lyso_glmm)
 coef_row <- lyso_summary$coefficients["Phenotype1", ]
 
 glmm_lyso <- data.frame(
-  term = "Phenotype",
+  term = "Phenotype_6week",
   estimate_log_odds = coef_row["Estimate"],
   std_error = coef_row["Std. Error"],
   z_value = coef_row["z value"],
@@ -119,9 +120,73 @@ write.csv(
 )
 ```
 
+##Stats for Lysotracker on Fas3 border in 1 weeks, no phenotype vs phenotype
+
+Load data
+```{r}
+lysostats <- read_csv("Data/DataFigure3/w1118LysotrackerAll.csv")
+```
+
+```{r}
+lyso1wk <- lysostats %>%
+  filter(Weeks == 1) %>%
+  mutate(
+    Phenotype = factor(Phenotype),
+    N = factor(N)
+  )
+
+lyso_glmm <- glmer(
+  LysoFas3 ~ Phenotype + (1 | N),
+  data = lyso1wk,
+  family = binomial(link = "logit")
+)
+
+lyso_summary <- summary(lyso_glmm)
+
+# Extract fixed-effect stats (Phenotype 1 vs 0)
+coef_row <- lyso_summary$coefficients["Phenotype1", ]
+
+glmm_lyso <- data.frame(
+  term = "Phenotype_1week",
+  estimate_log_odds = coef_row["Estimate"],
+  std_error = coef_row["Std. Error"],
+  z_value = coef_row["z value"],
+  p_value = coef_row["Pr(>|z|)"],
+  odds_ratio = exp(coef_row["Estimate"])
+)
+
+glmm_lyso$stars <- ifelse(
+  glmm_lyso$p_value < 0.001, "***",
+  ifelse(glmm_lyso$p_value < 0.01, "**",
+         ifelse(glmm_lyso$p_value < 0.05, "*", "ns"))
+)
+
+print(glmm_lyso)
+```
+
+```{r}
+write.csv(
+  glmm_lyso,
+  "Results/ResultsFigure3/StatsLysoFas31wkNovsPhenoGlmm.csv",
+  row.names = FALSE
+)
+```
+
+##Merge .csvs for 1 and 6 week StatsLysoFas31wkNovsPhenoGlmm.csv and StatsLysoFas36wkNovsPhenoGlmm.csv
+```{r}
+df1 <- read_csv("Results/ResultsFigure3/StatsLysoFas31wkNovsPhenoGlmm.csv")
+df2 <- read_csv("Results/ResultsFigure3/StatsLysoFas36wkNovsPhenoGlmm.csv")
+
+merged_df <- rbind(df1,df2)
+
+write.csv(
+  merged_df,
+  "Results/ResultsFigure3/StatsLysoFas3byPhenoGlmm.csv",
+  row.names = FALSE
+)
+```
 
 ##Stats for Phenotype penetrance for 1 vs 6 weeks in No Lysotracker Band Condition 
-
 Load data
 ```{r}
 lysostats <- read_csv("Data/DataFigure3/w1118LysotrackerAll.csv")
@@ -170,4 +235,3 @@ write.csv(
   row.names = FALSE
 )
 ```
-
