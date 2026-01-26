@@ -1,0 +1,73 @@
+---
+title: "StatsTUNELposFas3posw1118"
+output: html_document
+date: "2026-01-26"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(dplyr)
+library(lme4)
+library(broom.mixed)
+```
+
+```{r}
+getwd()
+```
+
+Load data
+```{r}
+TUNELposFas3posstats <- read_csv("Data/DataSupplementals/w1118TUNELposFas3pos.csv")
+```
+
+```{r}
+TUNELposFas3posstats <- TUNELposFas3posstats %>%
+  mutate(
+    Weeks = factor(Weeks, levels = c(1, 6))  # Week 1 = reference
+  )
+
+TUNELposFas3posstats_pois <- glmer(
+  TUNELposFas3pos ~ Weeks + (1 | N),
+  data = TUNELposFas3posstats,
+  family = poisson(link = "log")
+)
+
+glmm_tidy <- tidy(
+  TUNELposFas3posstats_pois,
+  effects = "fixed",
+  conf.int = FALSE
+)
+
+week6_row <- glmm_tidy %>%
+  filter(term == "Weeks6")
+
+p_val <- week6_row$p.value
+
+stars <- case_when(
+  p_val < 0.001  ~ "***",
+  p_val < 0.01   ~ "**",
+  p_val < 0.05   ~ "*",
+  TRUE           ~ "ns"
+)
+
+poisson_TUNELposFas3pos <- data.frame(
+  comparison = "6 Weeks",
+  model = "Poisson_GLMM",
+  estimate_logRR = week6_row$estimate,
+  p_value = p_val,
+  stars = stars
+)
+
+print(poisson_TUNELposFas3pos)
+```
+
+```{r}
+write.csv(
+  poisson_TUNELposFas3pos,
+  file = "Results/ResultsSupplementals/StatsTUNELposFas3posPoisson.csv",
+  row.names = FALSE
+)
+```
+

@@ -1,0 +1,62 @@
+---
+title: "StatsVkgw1118"
+output: html_document
+date: "2026-01-26"
+editor_options: 
+  chunk_output_type: console
+---
+
+Set-up
+```{r}
+library(dplyr)
+library(tidyverse)
+library(multcomp)
+```
+
+```{r}
+getwd()
+```
+
+Load data
+```{r}
+vkgstats <- read_csv("Data/DataSupplementals/w1118Vkg_n.csv")
+```
+
+```{r}
+vkgstats <- vkgstats %>%
+  mutate(Weeks = factor(Weeks))
+```
+
+```{r}
+ttest_res <- t.test(
+  VkgIntensity ~ Weeks,
+  data = vkgstats,
+  var.equal = FALSE
+)
+
+p_val <- ttest_res$p.value
+
+stars <- case_when(
+  p_val < 0.001  ~ "***",
+  p_val < 0.01   ~ "**",
+  p_val < 0.05   ~ "*",
+  TRUE           ~ "ns"
+)
+
+ttest_df <- data.frame(
+  comparison = "6 Weeks",
+  p_value = p_val,
+  stars = stars
+)
+
+print(ttest_df)
+```
+
+```{r}
+write.csv(
+  ttest_df,
+  "Results/ResultsSupplementals/StatsVkgTtest.csv",
+  row.names = FALSE,
+  quote = TRUE
+)
+```
