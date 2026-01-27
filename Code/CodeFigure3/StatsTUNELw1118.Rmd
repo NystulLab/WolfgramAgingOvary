@@ -11,18 +11,20 @@ Set-up
 library(lme4)
 library(dplyr)
 library(broom.mixed)
+library(tidyverse)
 ```
 
 ```{r}
 getwd()
 ```
 
+##Stats for TUNEL on Fas3 border in 1 vs 6 weeks w1118
+
 Load data
 ```{r}
 tunelstats <- read_csv("Data/DataFigure3/w1118TUNELAll.csv")
 ```
 
-##Stats for TUNEL on Fas3 border in 1 vs 6 weeks w1118
 ```{r}
 tunelfas31v6_avg <- tunelstats %>%
   group_by(N, Weeks) %>%
@@ -66,7 +68,6 @@ write.csv(
 )
 ```
 
-
 ##Stats for TUNEL on Fas3 border in 6 weeks, no phenotype vs phenotype
 
 Load data
@@ -94,7 +95,7 @@ tunel_summary <- summary(tunel_glmm)
 coef_row <- tunel_summary$coefficients["Phenotype1", ]
 
 glmm_tunel <- data.frame(
-  term = "Phenotype",
+  term = "Phenotype_6week",
   estimate_log_odds = coef_row["Estimate"],
   std_error = coef_row["Std. Error"],
   z_value = coef_row["z value"],
@@ -119,6 +120,70 @@ write.csv(
 )
 ```
 
+##Stats for TUNEL on Fas3 border in 1 weeks, no phenotype vs phenotype
+
+Load data
+```{r}
+tunelstats <- read_csv("Data/DataFigure3/w1118TUNELAll.csv")
+```
+
+```{r}
+tunel1wk <- tunelstats %>%
+  filter(Weeks == 1) %>%
+  mutate(
+    Phenotype = factor(Phenotype),
+    N = factor(N)
+  )
+
+tunel_glmm <- glmer(
+  TUNELFas3 ~ Phenotype + (1 | N),
+  data = tunel1wk,
+  family = binomial(link = "logit")
+)
+
+tunel_summary <- summary(tunel_glmm)
+
+coef_row <- tunel_summary$coefficients["Phenotype1", ]
+
+glmm_tunel <- data.frame(
+  term = "Phenotype_1week",
+  estimate_log_odds = coef_row["Estimate"],
+  std_error = coef_row["Std. Error"],
+  z_value = coef_row["z value"],
+  p_value = coef_row["Pr(>|z|)"],
+  odds_ratio = exp(coef_row["Estimate"])
+)
+
+glmm_tunel$stars <- ifelse(
+  glmm_tunel$p_value < 0.001, "***",
+  ifelse(glmm_tunel$p_value < 0.01, "**",
+         ifelse(glmm_tunel$p_value < 0.05, "*", "ns"))
+)
+
+print(glmm_tunel)
+```
+
+```{r}
+write.csv(
+  glmm_tunel,
+  "Results/ResultsFigure3/StatsTUNELFas31wkNovsPhenoGlmm.csv",
+  row.names = FALSE
+)
+```
+
+##Merge .csvs for 1 and 6 week StatsLysoFas31wkNovsPhenoGlmm.csv and StatsLysoFas36wkNovsPhenoGlmm.csv
+```{r}
+df1 <- read_csv("Results/ResultsFigure3/StatsTUNELFas31wkNovsPhenoGlmm.csv")
+df2 <- read_csv("Results/ResultsFigure3/StatsTUNELFas36wkNovsPhenoGlmm.csv")
+
+merged_df <- rbind(df1,df2)
+
+write.csv(
+  merged_df,
+  "Results/ResultsFigure3/StatsTUNELFas3byPhenoGlmm.csv",
+  row.names = FALSE
+)
+```
 
 ##Stats for Phenotype penetrance for 1 vs 6 weeks in No TUNEL Band Condition 
 

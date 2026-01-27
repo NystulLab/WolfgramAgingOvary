@@ -1,0 +1,3 @@
+term,estimate_log_odds,std_error,z_value,p_value,odds_ratio,stars
+Phenotype_1week,-0.680440529,0.446373754,-1.524373964,0.12741532,0.506393862,ns
+Phenotype_6week,-2.494370693,0.624327432,-3.995292479,6.46144340690751e-05,0.082548383,***
