@@ -440,7 +440,7 @@ for (cl in clusters) {
 saveWorkbook(wb, "Results/ResultsFigure4/Top50_DEGs_perCluster.xlsx", overwrite = TRUE)
 ```
 
-##DotPlot Validation of Clusters (Sup Figure 3A)
+##DotPlot Validation of Clusters (Sup Figure 5A)
 ```{r}
 DotPlot(
   AgingOvary_merge,
@@ -629,7 +629,7 @@ readr::write_csv(
 )
 ```
 
-##Clustering strength within each age (Sup Figure 3B)
+##Clustering strength within each age (Sup Figure 5B)
 ```{r}
 library(cluster)
 library(dplyr)
@@ -783,7 +783,7 @@ readr::write_csv(
 )
 ```
 
-##Atg8a DotPlot (Sup Figure 4D)
+##Atg8a DotPlot (Sup Figure 5D)
 ```{r}
 library(patchwork)
 library(scales) 
@@ -963,8 +963,7 @@ p_slim_fc
 
 ggsave("Results/ResultsFigure4/pFCSlimGODownReg.pdf", width = 8, height = 7)
 ```
-
-##GO Slim Plot for Up and Downregulated Genes in Whole Ovary (Sup Figure 3C)
+##GO Slim Plot for Up and Downregulated Genes in Whole Ovary (Sup Figure 5C)
 ```{r}
 Cell.Markers <- read_csv("Results/ResultsFigure4/WholeOvaryDEG_1v6.csv")
 colnames(Cell.Markers)[1] <- "Gene"
