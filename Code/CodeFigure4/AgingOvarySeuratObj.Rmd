@@ -1,0 +1,1172 @@
+---
+title: "AgingOvaryRep2SeuratObj"
+output: html_document
+date: "2026-02-03"
+editor_options: 
+  chunk_output_type: console
+---
+
+##Set-up (R4.5.2)
+Note: You will need to download the matrix files from GEO and then direct seur.data line to the correct matrix folder for that timepoint and replicate on your local drive. The LargeFiles is under .gitignore and will not download these files directly when you clone the repository. 
+```{r}
+library(Seurat)
+library(BiocManager)
+library(tidyverse)
+library(scCustomize)
+library(sctransform)
+library(future)
+library(patchwork)
+library(dplyr)
+library(openxlsx)
+BiocManager::install('glmGamPoi')
+#library(DESeq2)
+#library(SeuratDisk)
+
+```
+
+```{r}
+getwd()
+```
+
+Upgrade RAM allowed usage from 500 MiB (default) to full RAM space
+```{r}
+options(future.globals.maxSize = 96 * 1024^3)
+options(expressions = 5000)
+```
+
+##Build Seurat object from AgingOvary1wk (Jan 2025) filtered feature matrix file
+```{r}
+base_dir <- "LargeFiles/1_week_filtered_feature_bc_matrix"
+
+file.rename(from = file.path(base_dir, "1_week_barcodes.tsv.gz"), 
+            to   = file.path(base_dir, "barcodes.tsv.gz"))
+
+file.rename(from = file.path(base_dir, "1_week_features.tsv.gz"),
+            to   = file.path(base_dir, "features.tsv.gz"))
+
+file.rename(from = file.path(base_dir, "1_week_matrix.mtx.gz"), 
+            to   = file.path(base_dir, "matrix.mtx.gz"))
+
+seur.data <- Read10X(data.dir = base_dir)
+
+AgingOvary1wk <- CreateSeuratObject(counts = seur.data, project = "AgingOvary1wk", min.cells = 3, min.features = 200)
+
+rm(seur.data)
+```
+
+Quality control AgingOvary1wk Seurat object (Sup Figure 4A)
+```{r}
+AgingOvary1wk[["percent.mt"]] <- PercentageFeatureSet(
+  AgingOvary1wk,
+  pattern = "mt:"
+)
+
+p1 <- VlnPlot(
+  AgingOvary1wk,
+  features = "nFeature_RNA",
+  pt.size = 0.0001
+) +
+  scale_y_continuous(breaks = seq(0, 6000, by = 500)) +
+  ggtitle("nFeature_1wk") +
+  NoLegend() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank())
+
+p2 <- VlnPlot(
+  AgingOvary1wk,
+  features = "nCount_RNA",
+  pt.size = 0.0001
+) +
+  scale_y_continuous(
+    trans = "log",
+    breaks = c(seq(0, 5000, by = 250),
+               seq(10000, 100000, by = 10000))
+  ) +
+  ggtitle("nCount_1wk") +
+  NoLegend() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank())
+
+p3 <- VlnPlot(
+  AgingOvary1wk,
+  features = "percent.mt",
+  pt.size = 0.0001
+) +
+  ggtitle("percentMT_1wk") +
+  NoLegend() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank())
+
+qc_plot_1wk <- p1 | p2 | p3
+rm(p1, p2, p3)
+
+qc_plot_1wk
+
+ggsave("Results/ResultsSupplementals/QC_AgingOvary1wk.pdf", qc_plot_1wk, width = 12, height = 4)
+```
+
+```{r}
+AgingOvary1wk <- subset(AgingOvary1wk, subset = nFeature_RNA > 500 & nFeature_RNA < 4200 & nCount_RNA > 750 & nCount_RNA < 100000 & percent.mt < 30)
+```
+
+##Build Seurat object from AgingOvary6wk (Jan 2025) filtered feature matrix file
+```{r}
+base_dir <- "LargeFiles/6_week_filtered_feature_bc_matrix"
+
+file.rename(from = file.path(base_dir, "6_week_barcodes.tsv.gz"), 
+            to   = file.path(base_dir, "barcodes.tsv.gz"))
+
+file.rename(from = file.path(base_dir, "6_week_features.tsv.gz"),
+            to   = file.path(base_dir, "features.tsv.gz"))
+
+file.rename(from = file.path(base_dir, "6_week_matrix.mtx.gz"), 
+            to   = file.path(base_dir, "matrix.mtx.gz"))
+
+seur.data <- Read10X(data.dir = base_dir)
+
+AgingOvary6wk <- CreateSeuratObject(counts = seur.data, project = "AgingOvary6wk", min.cells = 3, min.features = 200)
+
+rm(seur.data)
+```
+
+Quality control AgingOvary6wk Seurat object (Sup Figure 4B)
+```{r}
+AgingOvary6wk[["percent.mt"]] <- PercentageFeatureSet(
+  AgingOvary6wk,
+  pattern = "mt:"
+)
+
+p1 <- VlnPlot(
+  AgingOvary6wk,
+  features = "nFeature_RNA",
+  pt.size = 0.0001
+) +
+  scale_y_continuous(breaks = seq(0, 6000, by = 500)) +
+  ggtitle("nFeature_6wk") +
+  NoLegend() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank())
+
+p2 <- VlnPlot(
+  AgingOvary6wk,
+  features = "nCount_RNA",
+  pt.size = 0.0001
+) +
+  scale_y_continuous(
+    trans = "log",
+    breaks = c(seq(0, 5000, by = 250),
+               seq(10000, 100000, by = 10000))
+  ) +
+  ggtitle("nCount_6wk") +
+  NoLegend() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank())
+
+p3 <- VlnPlot(
+  AgingOvary6wk,
+  features = "percent.mt",
+  pt.size = 0.0001
+) +
+  ggtitle("percentMT_6wk") +
+  NoLegend() +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank())
+
+qc_plot_6wk <- p1 | p2 | p3
+rm(p1, p2, p3)
+
+qc_plot_6wk
+
+ggsave("Results/ResultsSupplementals/QC_AgingOvary6wk.pdf", qc_plot_6wk, width = 12, height = 4)
+```
+
+```{r}
+AgingOvary6wk <- subset(AgingOvary6wk, subset = nFeature_RNA > 500 & nFeature_RNA < 4500 & nCount_RNA > 750 & nCount_RNA < 50000 & percent.mt < 20)
+```
+
+Tidy up environment
+```{r}
+rm(qc_plot_1wk, qc_plot_6wk)
+```
+
+##Normalize and Scale AgingOvary1wk
+```{r}
+AgingOvary1wk <- NormalizeData(AgingOvary1wk, normalization.method = "LogNormalize", scale.factor = 1e4)
+AgingOvary1wk <- FindVariableFeatures(AgingOvary1wk, selection.method = "vst", nfeatures = 3000)
+AgingOvary1wk <- ScaleData(AgingOvary1wk)
+```
+
+Determine PC dimensions and resoultion for AgingOvary1wk
+```{r}
+AgingOvary1wk <- RunPCA(AgingOvary1wk, verbose = FALSE)
+ElbowPlot(AgingOvary1wk)
+```
+
+```{r}
+AgingOvary1wk <- RunUMAP(AgingOvary1wk, dims = 1:18, reduction = "pca")
+
+AgingOvary1wk <- FindNeighbors(AgingOvary1wk, dims = 1:18)
+AgingOvary1wk <- FindClusters(AgingOvary1wk, resolution = 0.03)
+```
+
+```{r}
+DimPlot(AgingOvary1wk, reduction = "umap", label = TRUE) 
+
+FeaturePlot(AgingOvary1wk, reduction = "umap", features = c("vas"))
+```
+
+##Normalize and Scale AgingOvary6wk 
+```{r}
+AgingOvary6wk <- NormalizeData(AgingOvary6wk, normalization.method = "LogNormalize", scale.factor = 1e4)
+AgingOvary6wk <- FindVariableFeatures(AgingOvary6wk, selection.method = "vst", nfeatures = 3000)
+AgingOvary6wk <- ScaleData(AgingOvary6wk)
+```
+
+##Transfer anchors from AgingOvary1wk to AgingOvary6wk
+```{r}
+transfer.anchors <- FindTransferAnchors(
+  reference = AgingOvary1wk,
+  query = AgingOvary6wk,
+  normalization.method = "LogNormalize",
+  dims = 1:18
+)
+```
+
+```{r}
+predictions <- TransferData(
+  anchorset = transfer.anchors,
+  refdata = Idents(AgingOvary1wk),
+  dims = 1:18
+)
+```
+
+```{r}
+AgingOvary6wk <- AddMetaData(object = AgingOvary6wk, metadata = predictions)
+```
+
+```{r}
+AgingOvary6wk <- RunPCA(AgingOvary6wk, verbose = FALSE)
+AgingOvary6wk <- RunUMAP(AgingOvary6wk, dims = 1:18)
+```
+
+```{r}
+DimPlot(AgingOvary6wk, group.by = "predicted.id", label = TRUE) + NoLegend()
+
+FeaturePlot(AgingOvary6wk, reduction = "umap", features = c("vas"))
+```
+
+##Merge AgingOvary1wk and AgingOvary6wk to generate AgingOvary_merge
+```{r}
+# Add condition info
+AgingOvary1wk$condition <- "1wk"
+AgingOvary6wk$condition <- "6wk"
+```
+
+```{r}
+AgingOvary_merge <- merge(
+  AgingOvary1wk, 
+  y = AgingOvary6wk,
+  add.cell.ids = c("1wk", "6wk")
+)
+```
+
+```{r}
+DefaultAssay(AgingOvary_merge) <- "RNA"
+```
+
+```{r}
+AgingOvary_merge <- NormalizeData(AgingOvary_merge)
+AgingOvary_merge <- FindVariableFeatures(AgingOvary_merge)
+AgingOvary_merge <- ScaleData(AgingOvary_merge)
+AgingOvary_merge <- RunPCA(AgingOvary_merge, verbose = FALSE)
+```
+
+```{r}
+AgingOvary_merge <- RunUMAP(AgingOvary_merge, dims = 1:18)
+AgingOvary_merge <- FindNeighbors(AgingOvary_merge, dims = 1:18)
+AgingOvary_merge <- FindClusters(AgingOvary_merge, resolution = 0.03)
+
+DimPlot(AgingOvary_merge, reduction = "umap", label = TRUE)
+```
+
+```{r}
+AgingOvary_merge <- JoinLayers(AgingOvary_merge)
+```
+
+```{r}
+FeaturePlot(AgingOvary_merge, reduction = "umap", features = c("Fas3"), label = TRUE)
+
+DimPlot(AgingOvary_merge, reduction = "umap", group.by = "condition")
+```
+
+##Split cluster 2 into two separate clusters
+```{r}
+Idents(AgingOvary_merge) <- "seurat_clusters"
+
+clust2 <- subset(AgingOvary_merge, idents = 2)
+
+clust2 <- FindNeighbors(clust2, dims = 1:18)
+clust2 <- FindClusters(clust2, resolution = 0.01)
+
+DimPlot(clust2, label = TRUE)
+```
+
+```{r}
+clust2$cluster2_split <- ifelse(
+  clust2$seurat_clusters == 0, "2", "8")
+```
+
+```{r}
+AgingOvary_merge$cluster_manual <- as.character(Idents(AgingOvary_merge))
+
+AgingOvary_merge$cluster_manual[colnames(clust2)] <- clust2$cluster2_split
+
+Idents(AgingOvary_merge) <- "cluster_manual"
+
+DimPlot(AgingOvary_merge, label = TRUE)
+```
+
+##Get top DEGs by cluster to determine cluster identities
+```{r}
+library(dplyr)
+library(openxlsx)
+
+# Make sure Idents are set to seurat_clusters
+Idents(AgingOvary_merge) <- "cluster_manual"
+
+# Find all markers for the clusters
+all_markers <- FindAllMarkers(
+  object = AgingOvary_merge, 
+  only.pos = TRUE, 
+  min.pct = 0.25, 
+  logfc.threshold = 0.25
+)
+
+top100 <- all_markers %>% 
+  group_by(cluster) %>% 
+  slice_max(order_by = avg_log2FC, n = 100)
+
+wb <- createWorkbook()
+
+clusters <- unique(top100$cluster)
+for (cl in clusters) {
+  df <- top100 %>% filter(cluster == cl)
+  addWorksheet(wb, paste0("Cluster_", cl))
+  writeData(wb, sheet = paste0("Cluster_", cl), x = df)
+}
+
+#saveWorkbook(wb, "Results/ResultsFigure4/Top100_DEGs_perCluster.xlsx", overwrite = TRUE)
+```
+
+##Naming and reordering clusters
+```{r}
+cluster_names <- c(
+  "0" = "Early-Mid FCs",
+  "1" = "FSCs + pFCs",
+  "2" = "Escort Cells",
+  "3" = "Muscle",
+  "4" = "Spermatheca",
+  "5" = "Germ Cells",
+  "6" = "Late FCs",
+  "7" = "Neurons",
+  "8" = "Immune"
+  )
+```
+
+```{r}
+Idents(AgingOvary_merge) <- "cluster_manual"
+```
+
+```{r}
+AgingOvary_merge <- RenameIdents(AgingOvary_merge, cluster_names)
+```
+
+```{r}
+AgingOvary_merge$cluster_names <- Idents(AgingOvary_merge)
+head(AgingOvary_merge@meta.data)
+```
+
+```{r}
+new_order <- c(
+  "Germ Cells",
+  "Escort Cells",
+  "FSCs + pFCs",
+  "Early-Mid FCs",
+  "Late FCs",
+  "Muscle",
+  "Immune",
+  "Spermatheca",
+  "Neurons"
+)
+
+AgingOvary_merge$cluster_names <- factor(
+  AgingOvary_merge$cluster_names,
+  levels = new_order
+)
+  
+Idents(AgingOvary_merge) <- "cluster_names"
+```
+
+##UMAP of Clusters (Figure 4A)
+```{r}
+DimPlot(AgingOvary_merge, reduction = "umap") +
+  labs(title = "UMAP by Clusters") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave("Results/ResultsFigure4/UMAPMergeClusters.pdf", width = 9, height = 6)
+```
+
+##DEGs By Clusters (Figure 4C, Sup Table 2)
+```{r}
+all_markers <- FindAllMarkers(
+  object = AgingOvary_merge, 
+  only.pos = TRUE, 
+  min.pct = 0.25, 
+  logfc.threshold = 0.25)
+
+top50 <- all_markers %>% 
+  group_by(cluster) %>% 
+  slice_max(order_by = avg_log2FC, n = 100)
+
+wb <- createWorkbook()
+
+clusters <- unique(top50$cluster)
+for (cl in clusters) {
+  df <- top50 %>% filter(cluster == cl)
+  addWorksheet(wb, cl)
+  writeData(wb, cl, df)
+}
+
+saveWorkbook(wb, "Results/ResultsFigure4/Top50_DEGs_perCluster.xlsx", overwrite = TRUE)
+```
+
+##DotPlot Validation of Clusters (Sup Figure 3A)
+```{r}
+DotPlot(
+  AgingOvary_merge,
+  features = c(
+    "vas","Wnt4","Wnt6","zfh1","cas","eya","br","Fas3","mid","Yp1","Mhc","atilla","nec","lz","pros", "nrv3"
+  ),
+  group.by = "cluster_names"
+) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.x = element_text(size = 18, angle = 40, hjust = 1),
+    axis.text.y = element_text(size = 20),
+    panel.background = element_rect(fill = "white", color = NA),
+    plot.background  = element_rect(fill = "white", color = NA)
+  )
+
+ggsave("Results/ResultsSupplementals/ClusteringDotPlot.pdf", width = 11, height = 4)
+```
+
+##UMAP by Age (Figure 4B)
+```{r}
+DimPlot(AgingOvary_merge, reduction = "umap", group.by = "condition") +
+  scale_color_manual(values = c("1wk" = "purple", "6wk" = "lightblue3"), labels = c("1wk" = "1 Week", "6wk" = "6 Weeks")) +
+  labs(title = "UMAP by Age")
+
+ggsave("Results/ResultsFigure4/UMAPMerge1v6.pdf", width = 9, height = 6)
+```
+
+```{r}
+FeaturePlot(AgingOvary_merge, features = c("Wnt4"), reduction = "umap")
+```
+
+##Cell Counts per Cluster (Sup Table 1)
+```{r}
+md <- AgingOvary_merge@meta.data
+
+cells_per_cluster_rep <- dplyr::count(
+  md,
+  orig.ident,
+  cluster_names,
+  name = "n_cells"
+)
+
+cells_per_cluster_rep
+
+write.csv(
+  cells_per_cluster_rep,
+  "Results/ResultsFigure4/CellsPerCluster1v6.csv",
+  row.names = FALSE
+)
+```
+
+##Ranking clusters for highest number of DEGs between 1wk and 6wk (Figure 4C, Sup Table 3)
+```{r}
+Idents(AgingOvary_merge) <- "cluster_names"
+
+clusters <- levels(Idents(AgingOvary_merge))
+
+deg_list <- lapply(clusters, function(clust) {
+  markers <- FindMarkers(
+    AgingOvary_merge,
+    ident.1 = "6wk",
+    ident.2 = "1wk",
+    group.by = "condition",
+    subset.ident = clust,
+    logfc.threshold = 0.5
+  )
+  if (nrow(markers) > 0) {
+    markers$gene <- rownames(markers)
+    markers$cluster <- clust
+  }
+  return(markers)
+})
+
+all.degs <- do.call(rbind, deg_list)
+
+sig.degs <- all.degs %>%
+  filter(p_val_adj < 0.05 & abs(avg_log2FC) > 0.5)
+
+deg_counts <- sig.degs %>%
+  group_by(cluster) %>%
+  summarise(n_DEGs = n()) %>%
+  arrange(desc(n_DEGs))
+
+print(deg_counts)
+
+write.csv(deg_counts, file = "Results/ResultsFigure4/DEGCountsPerCluster.csv", row.names = FALSE)
+
+ggplot(deg_counts, aes(x = reorder(cluster, -n_DEGs), y = n_DEGs)) +
+  geom_bar(stat = "identity", fill = "darkgrey") +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Number of Significant DEGs per Cluster (6 Weeks vs 1 Week)",
+    x = NULL,   # removes x-axis label
+    y = "Number of DEGs"
+  ) +
+  theme(
+    plot.title = element_text(
+      size = 18,
+      face = "bold",
+      color = "black"
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 15,
+      face = "bold",
+      color = "black"   
+    ),
+    axis.text.y = element_text(
+      size = 16,
+      face = "bold",
+      color = "black"   
+    ),
+    axis.title.y = element_text(
+      face = "bold",
+      size = 16          
+    ))
+
+ggsave("Results/ResultsFigure4/DEGsRanked1v6.pdf", width = 9, height = 6)
+```
+
+##Volcano plot for Whole Ovary (Figure 4D)
+```{r}
+Idents(AgingOvary_merge) <- "condition"
+
+Cell.Markers <- FindMarkers(AgingOvary_merge, ident.1 = "6wk", ident.2 = "1wk", layer = "data")
+
+write.csv(Cell.Markers, "Results/ResultsFigure4/WholeOvaryDEG_1v6.csv")
+```
+
+```{r}
+BiocManager::install("EnhancedVolcano", force = TRUE)
+library(EnhancedVolcano)
+```
+
+```{r}
+Cell.Markers <- read_csv("Results/ResultsFigure4/WholeOvaryDEG_1v6.csv")
+colnames(Cell.Markers)[1] <- "Gene"
+
+deg_list <- Cell.Markers
+
+keyvals_degs <- ifelse(deg_list$avg_log2FC <= -0.5 & deg_list$p_val_adj < 0.05, 'blue3', ifelse(deg_list$avg_log2FC >= 0.5 & deg_list$p_val_adj < 0.05, 'red2', 'grey50'))
+
+keyvals_degs[is.na(keyvals_degs)]<-'grey50'
+names(keyvals_degs)[keyvals_degs == 'blue3'] <- 'Down-regulated'
+names(keyvals_degs)[keyvals_degs == 'red2'] <- 'Up-regulated'
+names(keyvals_degs)[keyvals_degs == 'grey50'] <- 'Not significant'
+
+Volcano_degs <- EnhancedVolcano(deg_list, x = 'avg_log2FC', y = 'p_val_adj', lab = deg_list$Gene, title = 'Volcano Plot for DEGs in Aging Whole Ovary', subtitle = bquote('Cutoff values (dashed lines) at LogFC > |0.5| and' ~italic(P[adj])~ '>0.05'), pCutoff = 0.05, FCcutoff = 0.5, border = 'full', gridlines.minor = FALSE, gridlines.major = FALSE, drawConnectors = TRUE, arrowheads = FALSE, pointSize = 3, labSize = 5, widthConnectors = 0, colCustom = keyvals_degs, min.segment.length = 20, titleLabSize = 25, subtitleLabSize = 15, legendLabSize = 15)
+
+Volcano_degs
+
+ggsave("Results/ResultsFigure4/WholeOvaryVolcanoPlot.pdf", width = 10, height = 10)
+```
+
+##Total list of DEGs (Sup Table 4)
+```{r}
+n_sig <- sum(
+  deg_list$p_val_adj < 0.05 &
+  abs(deg_list$avg_log2FC) >= 0.5,
+  na.rm = TRUE
+)
+
+n_sig
+```
+
+```{r}
+sig_degs <- deg_list %>%
+  dplyr::filter(
+    p_val_adj < 0.05,
+    abs(avg_log2FC) > 0.5
+  )
+
+sig_degs_out <- sig_degs %>%
+  dplyr::select(
+    Gene,
+    avg_log2FC,
+    p_val_adj
+  )
+
+readr::write_csv(
+  sig_degs_out,
+  "Results/ResultsFigure4/WholeOvary1v6SignificantDEGs.csv"
+)
+```
+
+##Clustering strength within each age (Sup Figure 3B)
+```{r}
+library(cluster)
+library(dplyr)
+library(ggplot2)
+
+# Build UMAP + metadata table
+umap_all <- as.data.frame(Embeddings(AgingOvary_merge, "umap"))
+umap_all$cluster   <- AgingOvary_merge$cluster_names
+umap_all$condition <- AgingOvary_merge$condition
+
+# Compute silhouette scores per age separately
+silhouette_age_df <- umap_all %>%
+  group_by(condition) %>%
+  group_modify(~ {
+
+    df <- .x
+
+    # Need at least 2 clusters and enough cells
+    if (length(unique(df$cluster)) < 2 || nrow(df) < 10) {
+      return(NULL)
+    }
+
+    dist_mat <- dist(df[, c("umap_1", "umap_2")])
+    cl_labels <- as.numeric(factor(df$cluster))
+
+    sil <- silhouette(cl_labels, dist_mat)
+
+    sil_df <- as.data.frame(sil)
+    sil_df$cluster <- df$cluster
+    sil_df$condition <- unique(df$condition)
+
+    sil_df
+  }) %>%
+  ungroup()
+
+# Summarize mean silhouette per cluster per age
+silhouette_summary <- silhouette_age_df %>%
+  group_by(cluster, condition) %>%
+  summarize(
+    mean_silhouette = mean(sil_width),
+    n_cells = n(),
+    .groups = "drop"
+  )
+
+# Rank clusters by overall silhouette strength (mean across ages)
+cluster_order_inverse <- silhouette_summary %>%
+  group_by(cluster) %>%
+  summarize(overall_sil = mean(mean_silhouette), .groups = "drop") %>%
+  arrange(overall_sil) %>%   # ascending = inverse strength
+  pull(cluster)
+
+silhouette_summary$cluster <- factor(
+  silhouette_summary$cluster,
+  levels = cluster_order_inverse
+)
+```
+
+```{r}
+ggplot(silhouette_summary,
+       aes(cluster, mean_silhouette, fill = condition)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  theme_classic(base_size = 16) +
+  theme(
+    axis.title.y = element_blank(),
+    axis.title.x = element_text(size = 20),
+    plot.title = element_text(size = 20),
+    axis.text.x = element_text(size = 18, face = "bold"),
+    axis.text.y = element_text(size = 16, face = "bold")) +
+  scale_fill_manual(
+    values = c("1wk" = "purple", "6wk" = "lightblue3"),
+    labels = c("1wk" = "1 Week", "6wk" = "6 Weeks"),
+    name = ""
+  ) +
+  labs(
+    x = "Cluster",
+    y = "Mean silhouette score",
+    title = "Cluster separability within each age"
+  )
+
+ggsave("Results/ResultsSupplementals/ClusterSeparabilityWithinAge.pdf", width = 8, height = 7)
+```
+
+##Subsetting FSC + pFC Cluster
+```{r}
+Idents(AgingOvary_merge) <- "cluster_names"
+```
+
+```{r}
+AgingOvary_pFC <- subset(AgingOvary_merge, idents = "FSCs + pFCs")
+
+AgingOvary_pFC <- SetIdent(AgingOvary_pFC, cells = which(AgingOvary_pFC$condition == "1wk"), "1wk")
+AgingOvary_pFC <- SetIdent(AgingOvary_pFC, cells = which(AgingOvary_pFC$condition == "6wk"), "6wk")
+```
+
+##Volcano Plot of FSC + pFC Cluster
+```{r}
+pFC.Markers <- FindMarkers(AgingOvary_pFC, ident.1 = "6wk", ident.2 = "1wk", slot = "data")
+
+write.csv(pFC.Markers, "Results/ResultsFigure4/pFCDEG_1v6.csv", row.names = TRUE)
+```
+
+```{r}
+pFC.Markers <- read_csv("Results/ResultsFigure4/pFCDEG_1v6.csv")
+colnames(pFC.Markers)[1] <- "Gene"
+
+deg_list <- pFC.Markers
+
+keyvals_degs <- ifelse(deg_list$avg_log2FC < -0.5 & deg_list$p_val_adj < 0.05, 'blue3', ifelse(deg_list$avg_log2FC > 0.5 & deg_list$p_val_adj < 0.05, 'red2', 'grey50'))
+
+keyvals_degs[is.na(keyvals_degs)]<-'grey50'
+names(keyvals_degs)[keyvals_degs == 'blue3'] <- 'Down-regulated'
+names(keyvals_degs)[keyvals_degs == 'red2'] <- 'Up-regulated'
+names(keyvals_degs)[keyvals_degs == 'grey50'] <- 'Not significant'
+
+Volcano_degs <- EnhancedVolcano(deg_list, x = 'avg_log2FC', y = 'p_val_adj', lab = deg_list$Gene, title = 'Volcano Plot for DEGs in Aging pFC', subtitle = bquote('Cutoff values (dashed lines) at LogFC > |0.5| and' ~italic(P[adj])~ '>0.05'), pCutoff = 0.05, FCcutoff = 0.5, border = 'full', gridlines.minor = FALSE, gridlines.major = FALSE, drawConnectors = TRUE, arrowheads = FALSE, pointSize = 3, labSize = 5, widthConnectors = 0, colCustom = keyvals_degs, min.segment.length = 20, titleLabSize = 25, subtitleLabSize = 15, legendLabSize = 15)
+
+Volcano_degs
+
+ggsave("Results/ResultsSupplementals/pFCVolcanoPlot.pdf", width = 10, height = 10)
+```
+
+##List of DEGs for FSCs + pFCs (Sup Table 5)
+```{r}
+n_sig <- sum(
+  deg_list$p_val_adj < 0.05 &
+  abs(deg_list$avg_log2FC) >= 0.5,
+  na.rm = TRUE
+)
+
+n_sig
+```
+
+```{r}
+sig_degs <- deg_list %>%
+  dplyr::filter(
+    p_val_adj < 0.05,
+    abs(avg_log2FC) > 0.5
+  )
+
+sig_degs_out <- sig_degs %>%
+  dplyr::select(
+    Gene,
+    avg_log2FC,
+    p_val_adj
+  )
+
+readr::write_csv(
+  sig_degs_out,
+  "Results/ResultsFigure4/pFC1v6SignificantDEGs.csv"
+)
+```
+
+##Atg8a DotPlot (Sup Figure 4D)
+```{r}
+library(patchwork)
+library(scales) 
+
+feature_list = c("Atg8a")
+
+p1 <- DotPlot(
+  subset(AgingOvary_merge, condition == "1wk"),
+  features = feature_list,
+  group.by = "cluster_names",
+  scale = FALSE
+) +
+  scale_color_gradient(
+    low = "lightgrey",
+    high = "blue",
+    limits = c(0, 3.5),      
+    oob = scales::squish
+  ) +
+  scale_size_continuous(
+    limits = c(0, 100),    
+    range = c(1, 7),
+    labels = percent_format(scale = 1)
+  ) +
+  ggtitle("1 Week") +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1, size = 16),
+    axis.text.y = element_text(size = 16),
+    plot.title = element_text(size = 18)
+  ) +
+  guides(color = "none")
+
+p2 <- DotPlot(
+  subset(AgingOvary_merge, condition == "6wk"),
+  features = feature_list,
+  group.by = "cluster_names",
+  scale = FALSE
+) +
+  scale_color_gradient(
+    low = "lightgrey",
+    high = "blue",
+    limits = c(0, 3.5),      
+    oob = scales::squish
+  ) +
+  scale_size_continuous(
+    limits = c(0, 100),
+    range = c(1, 7),
+    labels = percent_format(scale = 1)
+  ) +
+  ggtitle("6 Weeks") +
+  theme(
+    axis.text.x = element_text(angle = 40, hjust = 1, size = 16),
+    axis.text.y = element_text(size = 16),
+    plot.title = element_text(size = 18)
+  )
+
+p_combined <- p1 + p2 + plot_layout(guides = "collect") & theme(legend.position = "right")
+
+p_combined
+
+ggsave("Results/ResultsSupplementals/Atg8aDotPlot1v6.pdf", p_combined, width = 12, height = 5)
+```
+
+##GO Slim for Downregulated Genes in FSCs + pFCs (Figure 4E)
+```{r}
+library(tidyr)      
+library(readr)
+library(stringr)    
+library(ggplot2)   
+library(forcats)
+library(clusterProfiler)  
+library(org.Dm.eg.db)     
+library(GO.db)            
+library(ontologyIndex)
+```
+
+```{r}
+pFC.Markers <- read_csv("Results/ResultsFigure4/pFCDEG_1v6.csv")
+colnames(pFC.Markers)[1] <- "Gene"
+
+DEG <- pFC.Markers
+```
+
+```{r}
+pvalsub <- DEG %>% filter(p_val_adj < 0.05)
+downreg <- pvalsub %>% filter(avg_log2FC < -0.5)
+
+downreg_enrich <- enrichGO(
+  gene          = downreg$Gene,
+  OrgDb         = org.Dm.eg.db,
+  keyType       = "SYMBOL",
+  ont           = "BP",
+  pAdjustMethod = "BH",
+  pvalueCutoff  = 0.05,
+  qvalueCutoff  = 0.05
+)
+
+downreg_enrich_df <- as.data.frame(downreg_enrich@result)
+```
+
+```{r}
+goslim_dmel <- ontologyIndex::get_ontology(
+  "https://current.geneontology.org/ontology/subsets/goslim_drosophila.obo",
+  extract_tags = "everything"
+)
+
+slim_bp_ids <- names(goslim_dmel$name)[goslim_dmel$namespace == "biological_process"]
+slim_bp_names <- goslim_dmel$name[slim_bp_ids]
+```
+
+```{r}
+anc_list <- AnnotationDbi::mget(downreg_enrich_df$ID, GOBPANCESTOR, ifnotfound = NA)
+
+map_to_slim_bp <- function(go_id, anc_vec, slim_ids) {
+  anc <- unique(na.omit(anc_vec))
+  candidates <- unique(c(go_id, anc))             
+  matches <- intersect(candidates, slim_ids)
+  if (length(matches) == 0) return(NA_character_)
+  paste(matches, collapse = ",")
+}
+
+downreg_enrich_df$Slim_IDs <- Map(map_to_slim_bp,
+                                downreg_enrich_df$ID,
+                                anc_list,
+                                MoreArgs = list(slim_ids = slim_bp_ids)) |> unlist()
+
+id_to_names <- function(s) {
+  if (is.na(s)) return(NA_character_)
+  ids <- strsplit(s, ",", fixed = TRUE)[[1]]
+  paste(unname(slim_bp_names[ids]), collapse = "; ")
+}
+downreg_enrich_df$Slim_Names <- vapply(downreg_enrich_df$Slim_IDs, id_to_names, character(1))
+```
+
+```{r}
+enrich_slim <- downreg_enrich_df |> filter(!is.na(Slim_IDs))
+```
+
+```{r}
+slim_gene_fc <- enrich_slim |>
+  separate_rows(Slim_IDs, Slim_Names, sep = "[;,]\\s*") |>
+  mutate(genes = strsplit(geneID, "/", fixed = TRUE)) |>
+  unnest(genes) |>
+  left_join(downreg[, c("Gene", "avg_log2FC")], by = c("genes" = "Gene")) |>
+  group_by(Slim_IDs, Slim_Names) |>
+  summarise(
+    n_genes = n_distinct(genes),
+    avg_logFC = mean(avg_log2FC, na.rm = TRUE),
+    med_logFC = median(avg_log2FC, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+slim_gene_fc_down <- slim_gene_fc
+
+p_slim_fc <- slim_gene_fc |>
+  slice_max(n_genes, n = 20) |>
+  mutate(Slim_Names = stringr::str_trunc(Slim_Names, 60)) |>
+  ggplot(aes(x = n_genes,
+             y = forcats::fct_reorder(Slim_Names, n_genes),
+             fill = avg_logFC)) +
+  geom_col() +
+  scale_fill_gradient2(low = "darkblue", high = "skyblue", midpoint = 0) +
+  labs(title = "FSC + pFC Downregulated GO-Slim BP Terms",
+       x = "# of unique Genes",
+       y = "GO-Term",
+       fill = "Avg Log2FC") +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(size = 15, face = "bold", color = "black", hjust = 0.5),
+    axis.title.x = element_text(size = 12, color = "black"),
+    axis.text.y = element_text(size = 10, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 12, face = "bold", color = "black"),
+    panel.grid.major.y = element_blank(),
+    axis.title.y = element_blank()
+    )
+
+p_slim_fc
+
+ggsave("Results/ResultsFigure4/pFCSlimGODownReg.pdf", width = 8, height = 7)
+```
+
+##GO Slim Plot for Up and Downregulated Genes in Whole Ovary (Sup Figure 3C)
+```{r}
+Cell.Markers <- read_csv("Results/ResultsFigure4/WholeOvaryDEG_1v6.csv")
+colnames(Cell.Markers)[1] <- "Gene"
+
+DEG <- Cell.Markers
+```
+
+```{r}
+pvalsub <- DEG %>% filter(p_val_adj < 0.05)
+upreg <- pvalsub %>% filter(avg_log2FC > 0.5)
+
+upreg_enrich <- enrichGO(
+  gene          = upreg$Gene,
+  OrgDb         = org.Dm.eg.db,
+  keyType       = "SYMBOL",
+  ont           = "BP",
+  pAdjustMethod = "BH",
+  pvalueCutoff  = 0.05,
+  qvalueCutoff  = 0.05
+)
+
+upreg_enrich_df <- as.data.frame(upreg_enrich@result)
+```
+
+```{r}
+goslim_dmel <- ontologyIndex::get_ontology(
+  "https://current.geneontology.org/ontology/subsets/goslim_drosophila.obo",
+  extract_tags = "everything"
+)
+
+slim_bp_ids <- names(goslim_dmel$name)[goslim_dmel$namespace == "biological_process"]
+slim_bp_names <- goslim_dmel$name[slim_bp_ids]
+```
+
+```{r}
+anc_list <- AnnotationDbi::mget(upreg_enrich_df$ID, GOBPANCESTOR, ifnotfound = NA)
+
+map_to_slim_bp <- function(go_id, anc_vec, slim_ids) {
+  anc <- unique(na.omit(anc_vec))
+  candidates <- unique(c(go_id, anc))             
+  matches <- intersect(candidates, slim_ids)      
+  if (length(matches) == 0) return(NA_character_)
+  paste(matches, collapse = ",")
+}
+
+upreg_enrich_df$Slim_IDs <- Map(map_to_slim_bp,
+                                upreg_enrich_df$ID,
+                                anc_list,
+                                MoreArgs = list(slim_ids = slim_bp_ids)) |> unlist()
+
+id_to_names <- function(s) {
+  if (is.na(s)) return(NA_character_)
+  ids <- strsplit(s, ",", fixed = TRUE)[[1]]
+  paste(unname(slim_bp_names[ids]), collapse = "; ")
+}
+upreg_enrich_df$Slim_Names <- vapply(upreg_enrich_df$Slim_IDs, id_to_names, character(1))
+```
+
+```{r}
+enrich_slim <- upreg_enrich_df |> filter(!is.na(Slim_IDs))
+```
+
+```{r}
+slim_gene_fc <- enrich_slim |>
+  separate_rows(Slim_IDs, Slim_Names, sep = "[;,]\\s*") |>
+  mutate(genes = strsplit(geneID, "/", fixed = TRUE)) |>
+  unnest(genes) |>
+  left_join(downreg[, c("Gene", "avg_log2FC")], by = c("genes" = "Gene")) |>
+  group_by(Slim_IDs, Slim_Names) |>
+  summarise(
+    n_genes = n_distinct(genes),
+    avg_logFC = mean(avg_log2FC, na.rm = TRUE),
+    med_logFC = median(avg_log2FC, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+slim_gene_fc_up <- slim_gene_fc
+```
+
+```{r}
+pvalsub <- DEG %>% filter(p_val_adj < 0.05)
+downreg <- pvalsub %>% filter(avg_log2FC < -0.5)
+
+downreg_enrich <- enrichGO(
+  gene          = downreg$Gene,
+  OrgDb         = org.Dm.eg.db,
+  keyType       = "SYMBOL",
+  ont           = "BP",
+  pAdjustMethod = "BH",
+  pvalueCutoff  = 0.05,
+  qvalueCutoff  = 0.05
+)
+
+downreg_enrich_df <- as.data.frame(downreg_enrich@result)
+```
+
+```{r}
+goslim_dmel <- ontologyIndex::get_ontology(
+  "https://current.geneontology.org/ontology/subsets/goslim_drosophila.obo",
+  extract_tags = "everything"
+)
+
+slim_bp_ids <- names(goslim_dmel$name)[goslim_dmel$namespace == "biological_process"]
+slim_bp_names <- goslim_dmel$name[slim_bp_ids]
+```
+
+```{r}
+anc_list <- AnnotationDbi::mget(downreg_enrich_df$ID, GOBPANCESTOR, ifnotfound = NA)
+
+map_to_slim_bp <- function(go_id, anc_vec, slim_ids) {
+  anc <- unique(na.omit(anc_vec))
+  candidates <- unique(c(go_id, anc))             
+  matches <- intersect(candidates, slim_ids)      
+  if (length(matches) == 0) return(NA_character_)
+  paste(matches, collapse = ",")
+}
+
+downreg_enrich_df$Slim_IDs <- Map(map_to_slim_bp,
+                                downreg_enrich_df$ID,
+                                anc_list,
+                                MoreArgs = list(slim_ids = slim_bp_ids)) |> unlist()
+
+id_to_names <- function(s) {
+  if (is.na(s)) return(NA_character_)
+  ids <- strsplit(s, ",", fixed = TRUE)[[1]]
+  paste(unname(slim_bp_names[ids]), collapse = "; ")
+}
+downreg_enrich_df$Slim_Names <- vapply(downreg_enrich_df$Slim_IDs, id_to_names, character(1))
+```
+
+```{r}
+enrich_slim <- downreg_enrich_df |> filter(!is.na(Slim_IDs))
+```
+
+```{r}
+slim_gene_fc <- enrich_slim |>
+  separate_rows(Slim_IDs, Slim_Names, sep = "[;,]\\s*") |>
+  mutate(genes = strsplit(geneID, "/", fixed = TRUE)) |>
+  unnest(genes) |>
+  left_join(upreg[, c("Gene", "avg_log2FC")], by = c("genes" = "Gene")) |>
+  group_by(Slim_IDs, Slim_Names) |>
+  summarise(
+    n_genes = n_distinct(genes),
+    avg_logFC = mean(avg_log2FC, na.rm = TRUE),
+    med_logFC = median(avg_log2FC, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+slim_gene_fc_down <- slim_gene_fc
+```
+
+```{r}
+slim_gene_fc_up <- slim_gene_fc_up |> mutate(direction = "Up")
+slim_gene_fc_down <- slim_gene_fc_down |> mutate(direction = "Down")
+
+slim_both <- bind_rows(slim_gene_fc_up, slim_gene_fc_down)
+
+shared_terms <- intersect(slim_gene_fc_up$Slim_Names, slim_gene_fc_down$Slim_Names)
+slim_both <- slim_both |> filter(Slim_Names %in% shared_terms)
+
+topN <- 30
+slim_both_top <- slim_both |>
+  group_by(Slim_Names) |>
+  mutate(total_genes = sum(n_genes)) |>
+  ungroup() |>
+  slice_max(total_genes, n = topN, with_ties = FALSE)
+
+slim_both_top <- slim_both_top |> 
+  mutate(plot_n = ifelse(direction == "Down", -n_genes, n_genes))
+
+p_slim_diverging <- slim_both_top |>
+  mutate(Slim_Names = str_trunc(Slim_Names, 60)) |>
+  ggplot(aes(
+    x = plot_n,
+    y = fct_reorder(Slim_Names, abs(plot_n)),
+    fill = direction
+  )) +
+  geom_col(width = 0.7, alpha = 0.8) +
+  scale_x_continuous(
+    labels = function(x) abs(x),
+    breaks = scales::pretty_breaks(n = 6)
+  ) +
+  scale_fill_manual(
+    values = c("Up" = "red2", "Down" = "blue3")
+  ) +
+  labs(
+    title = "Whole Ovary GO-Slim BP Terms",
+    x = "Number of unique genes",
+    y = "GO-slim term",
+    fill = "Direction"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(size = 18, face = "bold", color = "black"),
+    axis.title.x = element_text(size = 12, color = "black"),
+    axis.text.y = element_text(size = 9, face = "bold", color = "black"),
+    axis.text.x = element_text(size = 12, face = "bold", color = "black"),
+    panel.grid.major.y = element_blank(),
+    axis.title.y = element_blank()
+    )
+
+p_slim_diverging
+
+ggsave("Results/ResultsSupplementals/WholeOvarySlimGODiverge.pdf", width = 8, height = 6)
+```
