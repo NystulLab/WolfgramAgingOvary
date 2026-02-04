@@ -846,24 +846,84 @@ p_combined
 ggsave("Results/ResultsSupplementals/Atg8aDotPlot1v6.pdf", p_combined, width = 12, height = 5)
 ```
 
-##GO Slim for Downregulated Genes in FSCs + pFCs (Figure 4E)
-```{r}
-library(tidyr)      
-library(readr)
-library(stringr)    
-library(ggplot2)   
-library(forcats)
-library(clusterProfiler)  
-library(org.Dm.eg.db)     
-library(GO.db)            
-library(ontologyIndex)
-```
-
+##GO Slim Plot for Up and Downregulated Genes in pFC + FSC (Figure 4E)
 ```{r}
 pFC.Markers <- read_csv("Results/ResultsFigure4/pFCDEG_1v6.csv")
 colnames(pFC.Markers)[1] <- "Gene"
 
 DEG <- pFC.Markers
+```
+
+```{r}
+pvalsub <- DEG %>% filter(p_val_adj < 0.05)
+upreg <- pvalsub %>% filter(avg_log2FC > 0.5)
+
+upreg_enrich <- enrichGO(
+  gene          = upreg$Gene,
+  OrgDb         = org.Dm.eg.db,
+  keyType       = "SYMBOL",
+  ont           = "BP",
+  pAdjustMethod = "BH",
+  pvalueCutoff  = 0.05,
+  qvalueCutoff  = 0.05
+)
+
+upreg_enrich_df <- as.data.frame(upreg_enrich@result)
+```
+
+```{r}
+goslim_dmel <- ontologyIndex::get_ontology(
+  "https://current.geneontology.org/ontology/subsets/goslim_drosophila.obo",
+  extract_tags = "everything"
+)
+
+slim_bp_ids <- names(goslim_dmel$name)[goslim_dmel$namespace == "biological_process"]
+slim_bp_names <- goslim_dmel$name[slim_bp_ids]
+```
+
+```{r}
+anc_list <- AnnotationDbi::mget(upreg_enrich_df$ID, GOBPANCESTOR, ifnotfound = NA)
+
+map_to_slim_bp <- function(go_id, anc_vec, slim_ids) {
+  anc <- unique(na.omit(anc_vec))
+  candidates <- unique(c(go_id, anc))             
+  matches <- intersect(candidates, slim_ids)      
+  if (length(matches) == 0) return(NA_character_)
+  paste(matches, collapse = ",")
+}
+
+upreg_enrich_df$Slim_IDs <- Map(map_to_slim_bp,
+                                upreg_enrich_df$ID,
+                                anc_list,
+                                MoreArgs = list(slim_ids = slim_bp_ids)) |> unlist()
+
+id_to_names <- function(s) {
+  if (is.na(s)) return(NA_character_)
+  ids <- strsplit(s, ",", fixed = TRUE)[[1]]
+  paste(unname(slim_bp_names[ids]), collapse = "; ")
+}
+upreg_enrich_df$Slim_Names <- vapply(upreg_enrich_df$Slim_IDs, id_to_names, character(1))
+```
+
+```{r}
+enrich_slim <- upreg_enrich_df |> filter(!is.na(Slim_IDs))
+```
+
+```{r}
+slim_gene_fc <- enrich_slim |>
+  separate_rows(Slim_IDs, Slim_Names, sep = "[;,]\\s*") |>
+  mutate(genes = strsplit(geneID, "/", fixed = TRUE)) |>
+  unnest(genes) |>
+  left_join(downreg[, c("Gene", "avg_log2FC")], by = c("genes" = "Gene")) |>
+  group_by(Slim_IDs, Slim_Names) |>
+  summarise(
+    n_genes = n_distinct(genes),
+    avg_logFC = mean(avg_log2FC, na.rm = TRUE),
+    med_logFC = median(avg_log2FC, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+slim_gene_fc_up <- slim_gene_fc
 ```
 
 ```{r}
@@ -899,7 +959,7 @@ anc_list <- AnnotationDbi::mget(downreg_enrich_df$ID, GOBPANCESTOR, ifnotfound =
 map_to_slim_bp <- function(go_id, anc_vec, slim_ids) {
   anc <- unique(na.omit(anc_vec))
   candidates <- unique(c(go_id, anc))             
-  matches <- intersect(candidates, slim_ids)
+  matches <- intersect(candidates, slim_ids)      
   if (length(matches) == 0) return(NA_character_)
   paste(matches, collapse = ",")
 }
@@ -926,7 +986,7 @@ slim_gene_fc <- enrich_slim |>
   separate_rows(Slim_IDs, Slim_Names, sep = "[;,]\\s*") |>
   mutate(genes = strsplit(geneID, "/", fixed = TRUE)) |>
   unnest(genes) |>
-  left_join(downreg[, c("Gene", "avg_log2FC")], by = c("genes" = "Gene")) |>
+  left_join(upreg[, c("Gene", "avg_log2FC")], by = c("genes" = "Gene")) |>
   group_by(Slim_IDs, Slim_Names) |>
   summarise(
     n_genes = n_distinct(genes),
@@ -936,33 +996,63 @@ slim_gene_fc <- enrich_slim |>
   )
 
 slim_gene_fc_down <- slim_gene_fc
+```
 
-p_slim_fc <- slim_gene_fc |>
-  slice_max(n_genes, n = 20) |>
-  mutate(Slim_Names = stringr::str_trunc(Slim_Names, 60)) |>
-  ggplot(aes(x = n_genes,
-             y = forcats::fct_reorder(Slim_Names, n_genes),
-             fill = avg_logFC)) +
-  geom_col() +
-  scale_fill_gradient2(low = "darkblue", high = "skyblue", midpoint = 0) +
-  labs(title = "FSC + pFC Downregulated GO-Slim BP Terms",
-       x = "# of unique Genes",
-       y = "GO-Term",
-       fill = "Avg Log2FC") +
+```{r}
+slim_gene_fc_up <- slim_gene_fc_up |> mutate(direction = "Up")
+slim_gene_fc_down <- slim_gene_fc_down |> mutate(direction = "Down")
+
+slim_both <- bind_rows(slim_gene_fc_up, slim_gene_fc_down)
+
+shared_terms <- intersect(slim_gene_fc_up$Slim_Names, slim_gene_fc_down$Slim_Names)
+slim_both <- slim_both |> filter(Slim_Names %in% shared_terms)
+
+topN <- 30
+slim_both_top <- slim_both |>
+  group_by(Slim_Names) |>
+  mutate(total_genes = sum(n_genes)) |>
+  ungroup() |>
+  slice_max(total_genes, n = topN, with_ties = FALSE)
+
+slim_both_top <- slim_both_top |> 
+  mutate(plot_n = ifelse(direction == "Down", -n_genes, n_genes))
+
+p_slim_diverging <- slim_both_top |>
+  mutate(Slim_Names = str_trunc(Slim_Names, 60)) |>
+  ggplot(aes(
+    x = plot_n,
+    y = fct_reorder(Slim_Names, abs(plot_n)),
+    fill = direction
+  )) +
+  geom_col(width = 0.7, alpha = 0.8) +
+  scale_x_continuous(
+    labels = function(x) abs(x),
+    breaks = scales::pretty_breaks(n = 6)
+  ) +
+  scale_fill_manual(
+    values = c("Up" = "red2", "Down" = "blue3")
+  ) +
+  labs(
+    title = "FSCs + pFCs GO-Slim BP Terms",
+    x = "Number of unique genes",
+    y = "GO-slim term",
+    fill = "Direction"
+  ) +
   theme_minimal(base_size = 12) +
   theme(
-    plot.title = element_text(size = 15, face = "bold", color = "black", hjust = 0.5),
+    plot.title = element_text(size = 18, face = "bold", color = "black"),
     axis.title.x = element_text(size = 12, color = "black"),
-    axis.text.y = element_text(size = 10, face = "bold", color = "black"),
+    axis.text.y = element_text(size = 9, face = "bold", color = "black"),
     axis.text.x = element_text(size = 12, face = "bold", color = "black"),
     panel.grid.major.y = element_blank(),
     axis.title.y = element_blank()
     )
 
-p_slim_fc
+p_slim_diverging
 
-ggsave("Results/ResultsFigure4/pFCSlimGODownReg.pdf", width = 8, height = 7)
+ggsave("Results/ResultsFigure4/pFCsSlimGODiverge.pdf", width = 8, height = 6)
 ```
+
 ##GO Slim Plot for Up and Downregulated Genes in Whole Ovary (Sup Figure 5C)
 ```{r}
 Cell.Markers <- read_csv("Results/ResultsFigure4/WholeOvaryDEG_1v6.csv")
