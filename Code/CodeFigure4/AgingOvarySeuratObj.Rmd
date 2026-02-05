@@ -749,7 +749,7 @@ Volcano_degs <- EnhancedVolcano(deg_list, x = 'avg_log2FC', y = 'p_val_adj', lab
 
 Volcano_degs
 
-ggsave("Results/ResultsFigure4/pFCVolcanoPlot.pdf", width = 10, height = 7)
+ggsave("Results/ResultsFigure4/pFCVolcanoPlot.pdf", width = 10, height = 8)
 ```
 
 ##List of DEGs for FSCs + pFCs (Sup Table 5)
@@ -1040,7 +1040,7 @@ p_slim_diverging <- slim_both_top |>
   ) +
   theme_minimal(base_size = 12) +
   theme(
-    plot.title = element_text(size = 18, face = "bold", color = "black", hjust = 0.5),
+    plot.title = element_text(size = 15, face = "bold", color = "black", hjust = 0.5),
     axis.title.x = element_text(size = 12, color = "black"),
     axis.text.y = element_text(size = 9, face = "bold", color = "black"),
     axis.text.x = element_text(size = 12, face = "bold", color = "black"),
@@ -1050,7 +1050,7 @@ p_slim_diverging <- slim_both_top |>
 
 p_slim_diverging
 
-ggsave("Results/ResultsFigure4/pFCsSlimGODiverge.pdf", width = 7, height = 7)
+ggsave("Results/ResultsFigure4/pFCsSlimGODiverge.pdf", width = 7, height = 6)
 ```
 
 ##GO Slim Plot for Up and Downregulated Genes in Whole Ovary (Sup Figure 5C)
@@ -1453,9 +1453,9 @@ human_gran_down_fly_sig <- human_gran_down_fly %>%
 ```{r}
 mouse_human_delist <- list(
   "Mouse Granulosa UpReg" = mouse_gran_up_fly_sig,
-  "Mouse Granulosa DownReg" = mouse_gran_down_fly_sig,
-  "Human Granulosa UpReg" = human_gran_up_fly_sig,
-  "Human Granulosa DownReg" = human_gran_down_fly_sig
+  #"Mouse Granulosa DownReg" = mouse_gran_down_fly_sig,
+  "Human Granulosa UpReg" = human_gran_up_fly_sig
+  #"Human Granulosa DownReg" = human_gran_down_fly_sig
 )
 ```
 
@@ -1485,9 +1485,13 @@ fc_mat[is.na(fc_mat)] <- 0
 ```{r}
 library(pheatmap)
 
+# Define breaks for the color scale
+breaksList <- seq(-2, 2, length.out = 101)  # same length as color palette
+
 pheatmap(
   fc_mat,
   color = colorRampPalette(c("blue", "white", "red"))(100),
+  breaks = breaksList,
   cluster_rows = FALSE,
   cluster_cols = FALSE,
   clustering_distance_rows = "euclidean",
