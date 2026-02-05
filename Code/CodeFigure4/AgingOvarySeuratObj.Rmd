@@ -595,7 +595,7 @@ Volcano_degs <- EnhancedVolcano(deg_list, x = 'avg_log2FC', y = 'p_val_adj', lab
 
 Volcano_degs
 
-ggsave("Results/ResultsFigure4/WholeOvaryVolcanoPlot.pdf", width = 10, height = 10)
+ggsave("Results/ResultsSupplementals/WholeOvaryVolcanoPlot.pdf", width = 10, height = 7)
 ```
 
 ##Total list of DEGs (Sup Table 4)
@@ -745,11 +745,11 @@ names(keyvals_degs)[keyvals_degs == 'blue3'] <- 'Down-regulated'
 names(keyvals_degs)[keyvals_degs == 'red2'] <- 'Up-regulated'
 names(keyvals_degs)[keyvals_degs == 'grey50'] <- 'Not significant'
 
-Volcano_degs <- EnhancedVolcano(deg_list, x = 'avg_log2FC', y = 'p_val_adj', lab = deg_list$Gene, title = 'Volcano Plot for DEGs in Aging pFC', subtitle = bquote('Cutoff values (dashed lines) at LogFC > |0.5| and' ~italic(P[adj])~ '>0.05'), pCutoff = 0.05, FCcutoff = 0.5, border = 'full', gridlines.minor = FALSE, gridlines.major = FALSE, drawConnectors = TRUE, arrowheads = FALSE, pointSize = 3, labSize = 5, widthConnectors = 0, colCustom = keyvals_degs, min.segment.length = 20, titleLabSize = 25, subtitleLabSize = 15, legendLabSize = 15)
+Volcano_degs <- EnhancedVolcano(deg_list, x = 'avg_log2FC', y = 'p_val_adj', lab = deg_list$Gene, title = 'Volcano Plot for DEGs in Aging FSCs + pFCs', subtitle = bquote('Cutoff values (dashed lines) at LogFC > |0.5| and' ~italic(P[adj])~ '>0.05'), pCutoff = 0.05, FCcutoff = 0.5, border = 'full', gridlines.minor = FALSE, gridlines.major = FALSE, drawConnectors = TRUE, arrowheads = FALSE, pointSize = 3, labSize = 5, widthConnectors = 0, colCustom = keyvals_degs, min.segment.length = 20, titleLabSize = 25, subtitleLabSize = 15, legendLabSize = 15)
 
 Volcano_degs
 
-ggsave("Results/ResultsSupplementals/pFCVolcanoPlot.pdf", width = 10, height = 10)
+ggsave("Results/ResultsFigure4/pFCVolcanoPlot.pdf", width = 10, height = 7)
 ```
 
 ##List of DEGs for FSCs + pFCs (Sup Table 5)
@@ -1040,7 +1040,7 @@ p_slim_diverging <- slim_both_top |>
   ) +
   theme_minimal(base_size = 12) +
   theme(
-    plot.title = element_text(size = 18, face = "bold", color = "black"),
+    plot.title = element_text(size = 18, face = "bold", color = "black", hjust = 0.5),
     axis.title.x = element_text(size = 12, color = "black"),
     axis.text.y = element_text(size = 9, face = "bold", color = "black"),
     axis.text.x = element_text(size = 12, face = "bold", color = "black"),
@@ -1050,7 +1050,7 @@ p_slim_diverging <- slim_both_top |>
 
 p_slim_diverging
 
-ggsave("Results/ResultsFigure4/pFCsSlimGODiverge.pdf", width = 8, height = 6)
+ggsave("Results/ResultsFigure4/pFCsSlimGODiverge.pdf", width = 7, height = 7)
 ```
 
 ##GO Slim Plot for Up and Downregulated Genes in Whole Ovary (Sup Figure 5C)
