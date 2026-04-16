@@ -1,4 +1,4 @@
-# Nystul Lab Template Repo
+# Aging Ovary Repo
 
 This repository contains scripts for the figures and single cell RNA sequencing analysis for the Aging Ovary Project.
 
